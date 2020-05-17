@@ -10,9 +10,9 @@ import (
 )
 
 const (
-	nNodes = 4000000
-	nEdges = 150
-	cpus   = 10000
+	nNodes = 6000000
+	nEdges = 200
+	cpus   = 500
 )
 
 type person struct {
@@ -97,7 +97,7 @@ func check(e error) {
 }
 
 func main() {
-	runtime.GOMAXPROCS(8)
+	runtime.GOMAXPROCS(16)
 	c := make(chan bool, cpus)
 
 	// random seed
@@ -125,7 +125,7 @@ func main() {
 
 	file, _ := json.Marshal(network)
 
-	_ = ioutil.WriteFile(string(time.Now().UnixNano())+"network.json", file, 0644)
+	_ = ioutil.WriteFile("network.json", file, 0644)
 
 	/*
 		//populate edges
