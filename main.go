@@ -16,8 +16,8 @@ const (
 	cpus            = 1
 	nTheoryNodes    = 4905854
 	bedPlaces       = 450 //https://www.aulss2.veneto.it/amministrazione-trasparente/disposizioni-generali/atti-generali/regolamenti?p_p_id=101&p_p_lifecycle=0&p_p_state=maximized&p_p_col_id=column-1&p_p_col_pos=22&p_p_col_count=24&_101_struts_action=%2Fasset_publisher%2Fview_content&_101_assetEntryId=10434368&_101_type=document
-	r0              = 2
-	infectiveEpochs = 14
+	r0              = 3
+	infectiveEpochs = 2
 )
 
 type person struct {
@@ -37,11 +37,15 @@ func spreadingDesease(networkPointer *bigNet, epochs int) error {
 		if epoch == 0 {
 			case0 := rand.Intn(nTheoryNodes)
 			(*networkPointer)[case0].Infective = true
+			(*networkPointer)[case0].InfectiveEpochs = infectiveEpochs
 			log.Println("CASE 0:", case0)
 			for r := 0; r < r0; r++ {
 				randomInfect := rand.Intn(len((*networkPointer)[case0].Edges))
 				infected := (*networkPointer)[case0].Edges[randomInfect]
-				(*networkPointer)[infected].Infective = true
+				if (*networkPointer)[infected].InfectiveEpochs > 0 {
+					(*networkPointer)[infected].Infective = true
+				}
+
 			}
 
 			reduceInfectiveEpochs(&(*networkPointer)[case0])
@@ -55,7 +59,8 @@ func spreadingDesease(networkPointer *bigNet, epochs int) error {
 
 					if (*networkPointer)[infected].Infective == false &&
 						(*networkPointer)[infected].Dead == false &&
-						(*networkPointer)[infected].Survived == false {
+						(*networkPointer)[infected].Survived == false &&
+						(*networkPointer)[infected].InfectiveEpochs > 0 {
 						(*networkPointer)[infected].Infective = true
 					}
 
@@ -134,7 +139,7 @@ func main() {
 			Infective:       false,
 			Survived:        false,
 			Dead:            false,
-			InfectiveEpochs: infectiveEpochs,
+			InfectiveEpochs: uint32(rand.Intn(infectiveEpochs)),
 		}
 
 		for j := 0; j < nEdges; j++ {
