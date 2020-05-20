@@ -6,6 +6,8 @@ package main
 import (
 	"log"
 	"math/rand"
+	"os"
+	"os/exec"
 	"runtime"
 	"time"
 )
@@ -17,6 +19,7 @@ const (
 	nTheoryNodes    = 4905854
 	bedPlaces       = 450 //https://www.aulss2.veneto.it/amministrazione-trasparente/disposizioni-generali/atti-generali/regolamenti?p_p_id=101&p_p_lifecycle=0&p_p_state=maximized&p_p_col_id=column-1&p_p_col_pos=22&p_p_col_count=24&_101_struts_action=%2Fasset_publisher%2Fview_content&_101_assetEntryId=10434368&_101_type=document
 	r0              = 3
+	medianR0        = 2.28 //https://pubmed.ncbi.nlm.nih.gov/32097725/ 2.06-2.52 95% CI 0,22/1.96 = 0.112
 	infectiveEpochs = 2
 )
 
@@ -131,6 +134,24 @@ func main() {
 	// initialize network
 	network := make(bigNet, nNodes)
 
+	log.Println("Calling Python script...")
+
+	// call python script
+
+	cmd := exec.Command("python3", "test.py")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	log.Println(cmd.Run())
+
+	//err := cmd.Run()
+	out, err := exec.Command("python3", "test.py").Output()
+
+	if err != nil {
+		log.Panicln("ERROR ON EXECUTING PYTHON SCRIPT", err)
+	}
+
+	log.Println("Output:\n---\n", string(out), "\n----")
+
 	log.Println("Creating network...")
 
 	for i := 0; i < nNodes; i++ {
@@ -172,3 +193,20 @@ func main() {
 	//_ = ioutil.WriteFile("network.json", file, 0644)
 
 }
+
+/*
+
+package main
+
+import "fmt"
+import "os/exec"
+
+func main() {
+    cmd := exec.Command("python",  "-c", "import pythonfile; print pythonfile.cat_strings('foo', 'bar')")
+    fmt.Println(cmd.Args)
+    out, err := cmd.CombinedOutput()
+    if err != nil { fmt.Println(err); }
+    fmt.Println(string(out))
+}
+exec.Command("script.py").Run()
+*/
