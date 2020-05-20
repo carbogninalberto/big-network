@@ -16,7 +16,7 @@ const (
 	cpus            = 1
 	nTheoryNodes    = 4905854
 	bedPlaces       = 450 //https://www.aulss2.veneto.it/amministrazione-trasparente/disposizioni-generali/atti-generali/regolamenti?p_p_id=101&p_p_lifecycle=0&p_p_state=maximized&p_p_col_id=column-1&p_p_col_pos=22&p_p_col_count=24&_101_struts_action=%2Fasset_publisher%2Fview_content&_101_assetEntryId=10434368&_101_type=document
-	r0              = 1
+	r0              = 2
 	infectiveEpochs = 14
 )
 
@@ -64,6 +64,7 @@ func spreadingDesease(networkPointer *bigNet, epochs int) error {
 			}
 
 		}
+		log.Println("EPOCH\t", epoch, "\tINFECTED:\t", countInfected(networkPointer))
 		runtime.GC()
 	}
 	return nil
@@ -97,16 +98,22 @@ func getInfected(networkPointer *bigNet) []int {
 }
 
 // countInfected counts the total number of infected people
-func countInfected(networkPointer *bigNet) {
+func countInfected(networkPointer *bigNet) int {
 	counter := 0
 	for node := 0; node < nNodes; node++ {
-		if (*networkPointer)[node].Infective == true ||
-			(*networkPointer)[node].Survived == true ||
-			(*networkPointer)[node].Dead == true {
+		/*
+			if (*networkPointer)[node].Infective == true ||
+				(*networkPointer)[node].Survived == true ||
+				(*networkPointer)[node].Dead == true {
+				counter++
+			}
+		*/
+		if (*networkPointer)[node].Infective == true {
 			counter++
 		}
 	}
-	log.Println("INFECTED PEOPLE:", counter)
+	//log.Println("INFECTED PEOPLE:", counter)
+	return counter
 }
 
 func main() {
@@ -145,9 +152,9 @@ func main() {
 	runtime.GC()
 	log.Println("Garbage Collector freed.")
 
-	spreadingDesease(&network, 10)
+	spreadingDesease(&network, 100)
 
-	countInfected(&network)
+	log.Println((&network))
 
 	log.Println("Marshaling...")
 	//file, _ := json.Marshal(network)
