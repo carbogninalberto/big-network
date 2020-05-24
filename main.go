@@ -14,11 +14,11 @@ import (
 
 const (
 	nNodes          = 4905854 //number of people in Veneto
-	nEdges          = 150     //Dunbar number
+	nEdges          = 20      //Dunbar number 150
 	cpus            = 1
 	nTheoryNodes    = 4905854
 	bedPlaces       = 450 //https://www.aulss2.veneto.it/amministrazione-trasparente/disposizioni-generali/atti-generali/regolamenti?p_p_id=101&p_p_lifecycle=0&p_p_state=maximized&p_p_col_id=column-1&p_p_col_pos=22&p_p_col_count=24&_101_struts_action=%2Fasset_publisher%2Fview_content&_101_assetEntryId=10434368&_101_type=document
-	r0              = 3
+	r0              = 2
 	medianR0        = 2.28 //https://pubmed.ncbi.nlm.nih.gov/32097725/ 2.06-2.52 95% CI 0,22/1.96 = 0.112
 	infectiveEpochs = 2
 )
@@ -180,7 +180,7 @@ func main() {
 
 	spreadingDesease(&network, 100)
 
-	log.Println((&network))
+	//log.Println((&network))
 
 	log.Println("Marshaling...")
 	//file, _ := json.Marshal(network)
