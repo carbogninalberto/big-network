@@ -22,8 +22,8 @@ type bigNet []person
 const (
 	//nTheoryNodes     = 4905854
 	//nNodes = 1070340 // 1070340 number of people in Trentino-Alto Adige
-	nNodes           = 4905854 // 4905854 number of people in Veneto
-	nEdges           = 150     //Dunbar number 150
+	nNodes           = 4905 //854 // 4905854 number of people in Veneto
+	nEdges           = 150  //Dunbar number 150
 	cpus             = 1
 	bedPlaces        = 450 //https://www.aulss2.veneto.it/amministrazione-trasparente/disposizioni-generali/atti-generali/regolamenti?p_p_id=101&p_p_lifecycle=0&p_p_state=maximized&p_p_col_id=column-1&p_p_col_pos=22&p_p_col_count=24&_101_struts_action=%2Fasset_publisher%2Fview_content&_101_assetEntryId=10434368&_101_type=document
 	r0               = 1
@@ -36,12 +36,12 @@ const (
 type person struct {
 	//Edges     []*person
 	//Id        uint32     `json:Id`
-	//Edges     []*relation `json:"Edges"`
-	Edges        []uint32 `json:"Edges"`
-	RelationType []byte   `json:"RelationType"`
-	Infective    bool     `json:"Infective"`
-	Survived     bool     `json:"Survived"`
-	Dead         bool     `json:"Dead"`
+	Edges []*relation `json:"Edges"`
+	//Edges        []uint32 `json:"Edges"`
+	//RelationType []byte   `json:"RelationType"`
+	Infective bool `json:"Infective"`
+	Survived  bool `json:"Survived"`
+	Dead      bool `json:"Dead"`
 	//Age 			bool 	 	`json:"Age`
 	InfectiveEpochs uint32 // ottimizza, aumenta tot giorni per terapia intensiva (14+21)
 }
@@ -70,8 +70,8 @@ func spreadingDesease(networkPointer *bigNet, epochs int, epochsResultsPointer *
 			for r := 0; r < r0; r++ {
 				randomInfect := rand.Intn(len((*networkPointer)[case0].Edges))
 				infected := (*networkPointer)[case0].Edges[randomInfect]
-				if (*networkPointer)[infected].InfectiveEpochs > 0 {
-					(*networkPointer)[infected].Infective = true
+				if (*networkPointer)[infected.Id].InfectiveEpochs > 0 {
+					(*networkPointer)[infected.Id].Infective = true
 				}
 
 			}
@@ -88,11 +88,11 @@ func spreadingDesease(networkPointer *bigNet, epochs int, epochsResultsPointer *
 					randomInfect := rand.Intn(len((*networkPointer)[infectedID].Edges))
 					infected := (*networkPointer)[infectedID].Edges[randomInfect]
 
-					if (*networkPointer)[infected].Infective == false &&
-						(*networkPointer)[infected].Dead == false &&
-						(*networkPointer)[infected].Survived == false &&
-						(*networkPointer)[infected].InfectiveEpochs > 0 {
-						(*networkPointer)[infected].Infective = true
+					if (*networkPointer)[infected.Id].Infective == false &&
+						(*networkPointer)[infected.Id].Dead == false &&
+						(*networkPointer)[infected.Id].Survived == false &&
+						(*networkPointer)[infected.Id].InfectiveEpochs > 0 {
+						(*networkPointer)[infected.Id].Infective = true
 					}
 
 				}
@@ -249,13 +249,13 @@ func main() {
 				// check that the random ID is not equal to the vertex we are considering
 				if edgeID != uint32(i) {
 					// initialize the relation struct with the random ID
-					newNode.Edges = append(newNode.Edges, edgeID)
-					newNode.RelationType = append(newNode.RelationType, relTypes[currentIndex])
-					/*
-						newNode.Edges = append(newNode.Edges, &relation{
-							Id:           edgeID,
-							RelationType: relTypes[currentIndex], // current Type of releation in generation
-						}) */
+					//newNode.Edges = append(newNode.Edges, edgeID)
+					//newNode.RelationType = append(newNode.RelationType, relTypes[currentIndex])
+
+					newNode.Edges = append(newNode.Edges, &relation{
+						Id:           edgeID,
+						RelationType: relTypes[currentIndex], // current Type of releation in generation
+					})
 				}
 				// check if it is the last element of index to add
 				if counters[relTypes[currentIndex]] > 1 {
