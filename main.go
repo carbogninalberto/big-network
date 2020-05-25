@@ -10,17 +10,20 @@ import (
 	"os/exec"
 	"runtime"
 	"time"
+	"encoding/csv"
+	"strconv"
 )
 
 const (
 	nNodes          = 4905854 //number of people in Veneto
-	nEdges          = 20      //Dunbar number 150
+	nEdges          = 150      //Dunbar number 150
 	cpus            = 1
 	nTheoryNodes    = 4905854
 	bedPlaces       = 450 //https://www.aulss2.veneto.it/amministrazione-trasparente/disposizioni-generali/atti-generali/regolamenti?p_p_id=101&p_p_lifecycle=0&p_p_state=maximized&p_p_col_id=column-1&p_p_col_pos=22&p_p_col_count=24&_101_struts_action=%2Fasset_publisher%2Fview_content&_101_assetEntryId=10434368&_101_type=document
-	r0              = 2
+	r0              = 1
 	medianR0        = 2.28 //https://pubmed.ncbi.nlm.nih.gov/32097725/ 2.06-2.52 95% CI 0,22/1.96 = 0.112
-	infectiveEpochs = 2
+	infectiveEpochs = 14
+	simulationEpochs = 100
 )
 
 type person struct {
@@ -29,14 +32,18 @@ type person struct {
 	Infective       bool     `json:"Infective"`
 	Survived        bool     `json:"Survived"`
 	Dead            bool     `json:"Dead"`
+	//Age 			bool 	 `json:"Age`
 	InfectiveEpochs uint32
 }
 type bigNet []person
+type resultMatrix [][]uint32
 
 // spreadingDesease runs a simulation over n epochs on a bigNet ([]person)
-func spreadingDesease(networkPointer *bigNet, epochs int) error {
+func spreadingDesease(networkPointer *bigNet, epochs int, epochsResultsPointer *[simulationEpochs][3]string) error {
 	for epoch := 0; epoch < epochs; epoch++ {
 		// on epoch 0 choose a random node
+		healedCounter := 0
+
 		if epoch == 0 {
 			case0 := rand.Intn(nTheoryNodes)
 			(*networkPointer)[case0].Infective = true
@@ -51,7 +58,10 @@ func spreadingDesease(networkPointer *bigNet, epochs int) error {
 
 			}
 
-			reduceInfectiveEpochs(&(*networkPointer)[case0])
+			result := reduceInfectiveEpochs(&(*networkPointer)[case0])
+			if result {
+				healedCounter++
+			}
 		} else {
 			infected := getInfected(networkPointer)
 
@@ -68,17 +78,33 @@ func spreadingDesease(networkPointer *bigNet, epochs int) error {
 					}
 
 				}
-				reduceInfectiveEpochs(&(*networkPointer)[infectedID])
+				result := reduceInfectiveEpochs(&(*networkPointer)[infectedID])				
+				if result {
+					healedCounter++
+				}
 			}
 
 		}
-		log.Println("EPOCH\t", epoch, "\tINFECTED:\t", countInfected(networkPointer))
+		infectNumber :=  countInfected(networkPointer)
+		log.Println("EPOCH\t", epoch, "\tINFECTED:\t", infectNumber)
+		// number of infected today
+		(*epochsResultsPointer)[epoch][0] = string(infectNumber)
+		// new number of infected today regards yesterday
+		if epoch != 0 {
+			lastInfected, _ := strconv.ParseInt((*epochsResultsPointer)[epoch-1][0], 10, 32)
+			(*epochsResultsPointer)[epoch][1] = string(infectNumber-int(lastInfected))
+		} else {
+			(*epochsResultsPointer)[epoch][1] = string(infectNumber)
+		}
+		
+		// number of people healed
+		(*epochsResultsPointer)[epoch][0] = string(infectNumber)
 		runtime.GC()
 	}
 	return nil
 }
 
-func reduceInfectiveEpochs(personPointer *person) {
+func reduceInfectiveEpochs(personPointer *person) bool {
 	//log.Println("reduceInfective", personPointer.Infective, personPointer.Survived, personPointer.InfectiveEpochs)
 	if personPointer.InfectiveEpochs > 1 {
 		personPointer.InfectiveEpochs--
@@ -87,10 +113,12 @@ func reduceInfectiveEpochs(personPointer *person) {
 		personPointer.InfectiveEpochs--
 		personPointer.Infective = false
 		personPointer.Survived = true
+		return true
 		//log.Println("personPointer.InfectiveEpochs == 1", personPointer.Infective, personPointer.Survived, personPointer.InfectiveEpochs)
 	} else {
 		log.Panicln("ERROR", personPointer.InfectiveEpochs)
 	}
+	return false
 }
 
 func getInfected(networkPointer *bigNet) []int {
@@ -133,18 +161,19 @@ func main() {
 	rand.Seed(seed)
 	// initialize network
 	network := make(bigNet, nNodes)
-
+	var epochsResults [simulationEpochs][3]string
+	
 	log.Println("Calling Python script...")
 
 	// call python script
 
-	cmd := exec.Command("python3", "test.py")
+	cmd := exec.Command("python", "test.py")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	log.Println(cmd.Run())
 
 	//err := cmd.Run()
-	out, err := exec.Command("python3", "test.py").Output()
+	out, err := exec.Command("python", "./test.py").Output()
 
 	if err != nil {
 		log.Panicln("ERROR ON EXECUTING PYTHON SCRIPT", err)
@@ -178,7 +207,7 @@ func main() {
 	runtime.GC()
 	log.Println("Garbage Collector freed.")
 
-	spreadingDesease(&network, 100)
+	spreadingDesease(&network, simulationEpochs, &epochsResults)
 
 	//log.Println((&network))
 
@@ -191,6 +220,22 @@ func main() {
 	log.Println("Garbage Collector freed.")
 
 	//_ = ioutil.WriteFile("network.json", file, 0644)
+
+	log.Println("Save results on csv")
+	csvFile, err := os.Create("simulation_results.csv")
+
+	if err != nil {
+		log.Fatalf("failed creating file: %s", err)
+	}
+	csvFile.Close()
+
+	csvwriter := csv.NewWriter(csvFile)
+ 
+	for _, epoch := range epochsResults {
+		_ = csvwriter.Write(epoch[:])
+	}
+
+	csvwriter.Flush()
 
 }
 
