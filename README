@@ -1,5 +1,5 @@
-# to run the simulation
+##to run the simulation
 
-'''
+```
 go run .
-'''
+```
