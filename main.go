@@ -28,13 +28,20 @@ const (
 
 type person struct {
 	//Edges     []*person
-	Edges           []uint32 `json:"Edges"`
-	Infective       bool     `json:"Infective"`
-	Survived        bool     `json:"Survived"`
-	Dead            bool     `json:"Dead"`
-	//Age 			bool 	 `json:"Age`
+	Edges           []relation	`json:"Edges"`
+	Infective       bool     	`json:"Infective"`
+	Survived        bool     	`json:"Survived"`
+	Dead            bool     	`json:"Dead"`
+	//Age 			bool 	 	`json:"Age`
 	InfectiveEpochs uint32
 }
+
+type relation struct {
+	Id				uint32
+	relationship	byte
+
+}
+
 type bigNet []person
 type resultMatrix [][]uint32
 
@@ -207,7 +214,17 @@ func main() {
 	runtime.GC()
 	log.Println("Garbage Collector freed.")
 
-	spreadingDesease(&network, simulationEpochs, &epochsResults)
+	// Montecarlo Simulation
+	trials := 100
+	for i := 0; i < trials; i++ {
+		spreadingDesease(&network, simulationEpochs, &epochsResults)
+		log.Println(trials, "\t infected...")
+		// CI: INFETTI TOTALI
+		// CI: MORTI TOTALI
+		// CI: GUARITI TOTALI
+
+	}
+	
 
 	//log.Println((&network))
 
