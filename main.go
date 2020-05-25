@@ -33,7 +33,7 @@ type person struct {
 	Survived        bool     	`json:"Survived"`
 	Dead            bool     	`json:"Dead"`
 	//Age 			bool 	 	`json:"Age`
-	InfectiveEpochs uint32 // ottimizza, aumenta tot giorni per terapia intensiva
+	InfectiveEpochs uint32 // ottimizza, aumenta tot giorni per terapia intensiva (14+21)
 }
 
 type relation struct {
