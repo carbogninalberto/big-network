@@ -38,9 +38,10 @@ go run . -loadnet=true -mctrials=100 -computeCI=true
 ### List of all flags
 - **-loadnet**: default value is false, if true it load a network from a file called Network.json, to change the loading file name check flag namenet
 - **-savenet**: default value is false, if true saves network on timestamp/Network.json
-- **-namenet**: Network.json", "default value is Network.json, it's the name of the network file
+- **-namenet**: default value is Network.json, it's the name of the network file
 - **-mctrials**: default value is 1, you can choose how many trials run on the Montecarlo Simulation
 - **-computeCI**: default value is false, set to true when use flag -mctrials > 1 to get Confidence Intervals of metrics
+- **-runpyscript**: default valuse is false, set to true if you want to print graphs of simulation with matplotlib
 
 ### 🚀 Project Timeline
 - [X] Defining Main Project Objectives

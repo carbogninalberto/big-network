@@ -22,12 +22,9 @@ type bigNet []person
 
 // Hyperparameters configuration of Simulation
 const (
-	//nTheoryNodes     = 4905854
-	//nNodes = 1070340 // 1070340 number of people in Trentino-Alto Adige
 	nNodes           = 49058 //5 //4 // 4905854 number of people in Veneto
 	nEdges           = 150   //Dunbar number 150
 	bedPlaces        = 450   //https://www.aulss2.veneto.it/amministrazione-trasparente/disposizioni-generali/atti-generali/regolamenti?p_p_id=101&p_p_lifecycle=0&p_p_state=maximized&p_p_col_id=column-1&p_p_col_pos=22&p_p_col_count=24&_101_struts_action=%2Fasset_publisher%2Fview_content&_101_assetEntryId=10434368&_101_type=document
-	r0               = 5
 	medianR0         = 2.28  //https://pubmed.ncbi.nlm.nih.gov/32097725/ 2.06-2.52 95% CI 0,22/1.96 = 0.112
 	stdR0            = 0.112 //0.112
 	infectiveEpochs  = 14
@@ -37,43 +34,24 @@ const (
 )
 
 type person struct {
-	//Edges     []*person
-	//Id        uint32     `json:Id`
-	//Edges     []*relation `json:"Edges"`
-	Edges        []uint32 `json:"e"`
-	RelationType []string `json:"r"`
-	Infective    bool     `json:"-"`
-	Survived     bool     `json:"-"`
-	Dead         bool     `json:"-"`
-	//Age 			bool 	 	`json:"Age`
-	InfectiveEpochs uint32 `json:"-"` // ottimizza, aumenta tot giorni per terapia intensiva (14+21)
-	InfectiveDays   []int8 `json:"-"`
-}
-
-// relationType
-//	'P': family relationship
-//	'A': friends
-//	'C': acquaintances
-//	'O': others
-type relation struct {
-	Id           uint32 `json:"Id"`
-	RelationType byte   `json:"RelationType"`
+	Edges           []uint32 `json:"e"`
+	RelationType    []string `json:"r"`
+	Infective       bool     `json:"-"`
+	Survived        bool     `json:"-"`
+	Dead            bool     `json:"-"`
+	InfectiveEpochs uint32   `json:"-"` // ottimizza per terapia intensiva (14+21)
+	InfectiveDays   []int8   `json:"-"`
 }
 
 // spreadingDesease runs a simulation over n epochs on a bigNet ([]person)
 func spreadingDesease(networkPointer *bigNet, epochs int, epochsResultsPointer *[simulationEpochs][5]int) error {
 	for epoch := 0; epoch < epochs; epoch++ {
-		// on epoch 0 choose a random node
-		healedCounter := 0
 
 		if epoch == 0 {
 			// pick a random infect over the graph
 			case0 := rand.Intn(nNodes)
-
 			(*networkPointer)[case0].Infective = true
-
 			log.Println("CASE 0:", case0)
-
 			infectiveDaysLen := len((*networkPointer)[case0].InfectiveDays)
 
 			for day := 0; day < infectiveDaysLen; day++ {
@@ -88,7 +66,9 @@ func spreadingDesease(networkPointer *bigNet, epochs int, epochsResultsPointer *
 
 					// I set to -1 in order to not consider it anymore
 					(*networkPointer)[case0].InfectiveDays[day] = -1
+
 				} else if (*networkPointer)[case0].InfectiveDays[day] > 0 {
+
 					// Add support to different measures
 					randomInfect := rand.Intn(len((*networkPointer)[case0].Edges))
 					infected := (*networkPointer)[case0].Edges[randomInfect]
@@ -98,23 +78,9 @@ func spreadingDesease(networkPointer *bigNet, epochs int, epochsResultsPointer *
 					(*networkPointer)[case0].InfectiveDays[day]--
 				}
 			}
+			// make time pass and reduce the remaining infective days
+			_ = reduceInfectiveEpochs(&(*networkPointer)[case0])
 
-			/*
-				// old code
-				for r := 0; r < r0; r++ {
-					randomInfect := rand.Intn(len((*networkPointer)[case0].Edges))
-					infected := (*networkPointer)[case0].Edges[randomInfect]
-					if (*networkPointer)[infected].InfectiveEpochs > 0 {
-						(*networkPointer)[infected].Infective = true
-					}
-
-				}
-			*/
-
-			result := reduceInfectiveEpochs(&(*networkPointer)[case0])
-			if result {
-				healedCounter++
-			}
 		} else {
 			infected := getInfected(networkPointer)
 
@@ -152,30 +118,15 @@ func spreadingDesease(networkPointer *bigNet, epochs int, epochsResultsPointer *
 						(*networkPointer)[infectedID].InfectiveDays[day]--
 					}
 				}
-				/*
-					// old code
-					for r := 0; r < r0; r++ {
-						randomInfect := rand.Intn(len((*networkPointer)[infectedID].Edges))
-						infected := (*networkPointer)[infectedID].Edges[randomInfect]
 
-						if (*networkPointer)[infected].Infective == false &&
-							(*networkPointer)[infected].Dead == false &&
-							(*networkPointer)[infected].Survived == false &&
-							(*networkPointer)[infected].InfectiveEpochs > 0 {
-							(*networkPointer)[infected].Infective = true
-						}
-
-					}
-				*/
-				result := reduceInfectiveEpochs(&(*networkPointer)[infectedID])
-				if result {
-					healedCounter++
-				}
+				// make time pass and reduce the remaining infective days
+				_ = reduceInfectiveEpochs(&(*networkPointer)[infectedID])
 			}
-
 		}
+
 		infectNumber := countInfected(networkPointer, true, false, false)
 		log.Println("EPOCH\t", epoch, "\tINFECTED:\t", infectNumber)
+
 		// number of infected today
 		(*epochsResultsPointer)[epoch][0] = infectNumber
 		// new number of infected today regards yesterday
@@ -220,20 +171,6 @@ func main() {
 	folderName := strconv.Itoa(int(time.Now().UnixNano()))
 	os.MkdirAll(folderName, os.ModePerm)
 
-	/*
-		// test bernoulli random generation
-		success, fail := 0, 0
-		for i := 0; i < 100; i++ {
-			if bernoulli(0.12) {
-				success++
-			} else {
-				fail++
-			}
-		}
-
-		log.Println("success:", success, "fail:", fail)
-	*/
-
 	if !*loadNetwork {
 		log.Println("Creating network...")
 
@@ -258,6 +195,7 @@ func main() {
 			rand.Seed(time.Now().UnixNano())
 
 			// Days where the node will infect others
+			// custom Normal Distribution
 			tmpR0 := int(math.Round(rand.NormFloat64()*stdR0 + medianR0))
 			if tmpR0 < 0 {
 				tmpR0 = 0
@@ -268,14 +206,12 @@ func main() {
 			for r := 0; r < tmpR0; r++ {
 				infectiveDays[r] = int8(rand.Intn(infectiveEpochs))
 			}
-			//b := rand.NormFloat64()*stdR0 + medianR0
-			//NormFloat64() * desiredStdDev + desiredMean
 
 			newNode := person{
 				Infective:       false,
 				Survived:        false,
 				Dead:            false,
-				InfectiveEpochs: infectiveEpochs, //uint32(rand.Intn(infectiveEpochs)),
+				InfectiveEpochs: infectiveEpochs,
 				InfectiveDays:   infectiveDays,
 			}
 
@@ -299,12 +235,6 @@ func main() {
 					// initialize the relation struct with the random ID
 					newNode.Edges = append(newNode.Edges, edgeID)
 					newNode.RelationType = append(newNode.RelationType, relTypes[currentIndex])
-					//edjeMap[edgeID] = true
-					/*
-						newNode.Edges = append(newNode.Edges, &relation{
-							Id:           edgeID,
-							RelationType: relTypes[currentIndex], // current Type of releation in generation
-						}) */
 				}
 				// check if it is the last element of index to add
 				if counters[relTypes[currentIndex]] > 1 {
@@ -358,7 +288,6 @@ func main() {
 	}
 
 	// Montecarlo Simulation
-
 	for i := 0; i < *mctrials; i++ {
 		log.Println("TRIAL:\t", i, "______________________________")
 		spreadingDesease(&network, simulationEpochs, &epochsResults)
@@ -373,10 +302,6 @@ func main() {
 		// CI: GUARITI TOTALI
 
 	}
-
-	//log.Println((&network))
-
-	//_ = ioutil.WriteFile("network.json", file, 0644)
 
 	log.Println("Save results on csv...")
 
