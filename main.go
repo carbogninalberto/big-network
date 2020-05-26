@@ -12,6 +12,7 @@ import (
 	"math"
 	"math/rand"
 	"os"
+	"os/exec"
 	"runtime"
 	"strconv"
 	"time"
@@ -197,96 +198,6 @@ func spreadingDesease(networkPointer *bigNet, epochs int, epochsResultsPointer *
 	return nil
 }
 
-//func middlewareSpreading()
-
-func reduceInfectiveEpochs(personPointer *person) bool {
-	//log.Println("reduceInfective", personPointer.Infective, personPointer.Survived, personPointer.InfectiveEpochs)
-	if personPointer.InfectiveEpochs > 1 {
-		personPointer.InfectiveEpochs--
-		//log.Println("personPointer.InfectiveEpochs > 1", personPointer.Infective, personPointer.Survived, personPointer.InfectiveEpochs)
-	} else if personPointer.InfectiveEpochs == 1 {
-		personPointer.InfectiveEpochs--
-		personPointer.Infective = false
-		if bernoulli(deadRate) {
-			personPointer.Dead = true
-		} else {
-			personPointer.Survived = true
-		}
-		return true
-		//log.Println("personPointer.InfectiveEpochs == 1", personPointer.Infective, personPointer.Survived, personPointer.InfectiveEpochs)
-	} else {
-		log.Panicln("ERROR", personPointer.InfectiveEpochs)
-	}
-	return false
-}
-
-func getInfected(networkPointer *bigNet) []int {
-	infected := make([]int, 0, 1)
-	for node := 0; node < nNodes; node++ {
-		if (*networkPointer)[node].Infective == true &&
-			(*networkPointer)[node].Survived == false &&
-			(*networkPointer)[node].Dead == false {
-			infected = append(infected, node)
-		}
-	}
-	return infected
-}
-
-// countInfected counts the total number of infected people
-func countInfected(networkPointer *bigNet, infective, survived, dead bool) int {
-	counter := 0
-	for node := 0; node < nNodes; node++ {
-		if (*networkPointer)[node].Infective == infective &&
-			(*networkPointer)[node].Survived == survived &&
-			(*networkPointer)[node].Dead == dead {
-			counter++
-		}
-	}
-	//log.Println("INFECTED PEOPLE:", counter)
-	return counter
-}
-
-func countTotalInfected(networkPointer *bigNet) int {
-	counter := 0
-	for node := 0; node < nNodes; node++ {
-		if (*networkPointer)[node].Infective == true ||
-			(*networkPointer)[node].Survived == true ||
-			(*networkPointer)[node].Dead == true {
-			counter++
-		}
-	}
-	return counter
-}
-
-func resetNetwork(networkPointer *bigNet) {
-	for node := 0; node < nNodes; node++ {
-		rand.Seed(time.Now().UnixNano())
-		tmpR0 := int(math.Round(rand.NormFloat64()*stdR0 + medianR0))
-		if tmpR0 < 0 {
-			tmpR0 = 0
-		}
-
-		infectiveDays := make([]int8, tmpR0)
-
-		for r := 0; r < tmpR0; r++ {
-			infectiveDays[r] = int8(rand.Intn(infectiveEpochs))
-		}
-
-		(*networkPointer)[node].Infective = false
-		(*networkPointer)[node].Survived = false
-		(*networkPointer)[node].Dead = false
-		(*networkPointer)[node].InfectiveEpochs = infectiveEpochs
-		(*networkPointer)[node].InfectiveDays = infectiveDays
-	}
-}
-
-func bernoulli(pSuccess float64) bool {
-	if rand.Intn(10000) <= int(pSuccess*10000) {
-		return true
-	}
-	return false
-}
-
 func main() {
 	runtime.GOMAXPROCS(8)
 
@@ -296,6 +207,7 @@ func main() {
 	fileNetwork := flag.String("namenet", "Network.json", "default value is Network.json, it's the name of the network file")
 	mctrials := flag.Int("mctrials", 1, "default value is 1, you can choose how many trials run on the Montecarlo Simulation")
 	computeCI := flag.Bool("computeCI", false, "default value is false, set to true when use flag -mctrials > 1 to get Confidence Intervals of metrics")
+	runPyScript := flag.Bool("runpyscript", false, "default valuse is false, set to true if you want to print graphs of simulation with matplotlib")
 	flag.Parse()
 
 	// random seed
@@ -322,24 +234,6 @@ func main() {
 		log.Println("success:", success, "fail:", fail)
 	*/
 
-	// call python script *working*
-	/*
-		log.Println("Calling Python script...")
-		cmd := exec.Command("python", "test.py")
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-		log.Println(cmd.Run())
-
-		//err := cmd.Run()
-		out, err := exec.Command("python", "./test.py").Output()
-
-		if err != nil {
-			log.Panicln("ERROR ON EXECUTING PYTHON SCRIPT", err)
-		}
-
-		log.Println("Output:\n---\n", string(out), "\n----")
-	*/
-
 	if !*loadNetwork {
 		log.Println("Creating network...")
 
@@ -362,14 +256,6 @@ func main() {
 		for i := 0; i < nNodes; i++ {
 
 			rand.Seed(time.Now().UnixNano())
-			/*
-				if i%100000 == 0 && i != 0 {
-					runtime.GC()
-					log.Println(i)
-				} */
-
-			// initialize a map to avoid the generation of unique edje
-			//edjeMap[uint32(i)] = true
 
 			// Days where the node will infect others
 			tmpR0 := int(math.Round(rand.NormFloat64()*stdR0 + medianR0))
@@ -457,13 +343,17 @@ func main() {
 			runtime.GC()
 			log.Println("Garbage Collector freed.")
 		} else {
-			log.Println("Skip saving network")
+			log.Println("<Skip saving network>")
 		}
 	} else {
 		log.Println("Loading network from file {}...", *fileNetwork)
 		file, _ := ioutil.ReadFile(*fileNetwork)
 
 		_ = json.Unmarshal([]byte(file), &network)
+
+		// reset network to default
+		resetNetwork(&network)
+
 		log.Println("Network loaded.")
 	}
 
@@ -488,7 +378,7 @@ func main() {
 
 	//_ = ioutil.WriteFile("network.json", file, 0644)
 
-	log.Println("Save results on csv")
+	log.Println("Save results on csv...")
 
 	csvFile, err := os.Create(folderName + "/simulation.csv")
 
@@ -513,5 +403,22 @@ func main() {
 
 	csvwriter.Flush()
 	csvFile.Close()
+
+	log.Println("Saved and closed csv.")
+
+	// call python script *working*
+	if *runPyScript {
+		log.Println("Calling Python script...")
+
+		out, err := exec.Command("python", "./plotgraphs.py").Output()
+
+		if err != nil {
+			log.Panicln("ERROR ON EXECUTING PYTHON SCRIPT", err)
+		}
+
+		log.Println("Output:\n---\n\n", string(out), "\n----")
+	} else {
+		log.Println("<Skip calling python script>")
+	}
 
 }
