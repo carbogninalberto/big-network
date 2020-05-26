@@ -23,9 +23,9 @@ type bigNet []person
 const (
 	//nTheoryNodes     = 4905854
 	//nNodes = 1070340 // 1070340 number of people in Trentino-Alto Adige
-	nNodes           = 490585 //4 // 4905854 number of people in Veneto
-	nEdges           = 150    //Dunbar number 150
-	bedPlaces        = 450    //https://www.aulss2.veneto.it/amministrazione-trasparente/disposizioni-generali/atti-generali/regolamenti?p_p_id=101&p_p_lifecycle=0&p_p_state=maximized&p_p_col_id=column-1&p_p_col_pos=22&p_p_col_count=24&_101_struts_action=%2Fasset_publisher%2Fview_content&_101_assetEntryId=10434368&_101_type=document
+	nNodes           = 49058 //5 //4 // 4905854 number of people in Veneto
+	nEdges           = 150   //Dunbar number 150
+	bedPlaces        = 450   //https://www.aulss2.veneto.it/amministrazione-trasparente/disposizioni-generali/atti-generali/regolamenti?p_p_id=101&p_p_lifecycle=0&p_p_state=maximized&p_p_col_id=column-1&p_p_col_pos=22&p_p_col_count=24&_101_struts_action=%2Fasset_publisher%2Fview_content&_101_assetEntryId=10434368&_101_type=document
 	r0               = 5
 	medianR0         = 2.28  //https://pubmed.ncbi.nlm.nih.gov/32097725/ 2.06-2.52 95% CI 0,22/1.96 = 0.112
 	stdR0            = 0.112 //0.112
@@ -295,6 +295,7 @@ func main() {
 	saveNetwork := flag.Bool("savenet", false, "default value is false, if true saves network on timestamp/Network.json")
 	fileNetwork := flag.String("namenet", "Network.json", "default value is Network.json, it's the name of the network file")
 	mctrials := flag.Int("mctrials", 1, "default value is 1, you can choose how many trials run on the Montecarlo Simulation")
+	computeCI := flag.Bool("computeCI", false, "default value is false, set to true when use flag -mctrials > 1 to get Confidence Intervals of metrics")
 	flag.Parse()
 
 	// random seed
@@ -473,6 +474,9 @@ func main() {
 		spreadingDesease(&network, simulationEpochs, &epochsResults)
 		log.Println("clear graph network...")
 		resetNetwork(&network)
+		if *computeCI {
+
+		}
 		// compute CI ecc
 		// CI: INFETTI TOTALI
 		// CI: MORTI TOTALI
@@ -486,7 +490,7 @@ func main() {
 
 	log.Println("Save results on csv")
 
-	csvFile, err := os.Create("simulation_results.csv")
+	csvFile, err := os.Create(folderName + "/simulation.csv")
 
 	if err != nil {
 		log.Fatalf("failed creating file: %s", err)
@@ -511,20 +515,3 @@ func main() {
 	csvFile.Close()
 
 }
-
-/*
-
-package main
-
-import "fmt"
-import "os/exec"
-
-func main() {
-    cmd := exec.Command("python",  "-c", "import pythonfile; print pythonfile.cat_strings('foo', 'bar')")
-    fmt.Println(cmd.Args)
-    out, err := cmd.CombinedOutput()
-    if err != nil { fmt.Println(err); }
-    fmt.Println(string(out))
-}
-exec.Command("script.py").Run()
-*/

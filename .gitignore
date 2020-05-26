@@ -1,2 +1,7 @@
 test.json
 network.json
+[0-9]*
+main
+main.exe
+test.py
+main.py
