@@ -9,6 +9,7 @@ import (
 	"flag"
 	"io/ioutil"
 	"log"
+	"math"
 	"math/rand"
 	"os"
 	"runtime"
@@ -22,28 +23,30 @@ type bigNet []person
 const (
 	//nTheoryNodes     = 4905854
 	//nNodes = 1070340 // 1070340 number of people in Trentino-Alto Adige
-	nNodes           = 4905 //854 // 4905854 number of people in Veneto
-	nEdges           = 150  //Dunbar number 150
-	cpus             = 1
-	bedPlaces        = 450 //https://www.aulss2.veneto.it/amministrazione-trasparente/disposizioni-generali/atti-generali/regolamenti?p_p_id=101&p_p_lifecycle=0&p_p_state=maximized&p_p_col_id=column-1&p_p_col_pos=22&p_p_col_count=24&_101_struts_action=%2Fasset_publisher%2Fview_content&_101_assetEntryId=10434368&_101_type=document
-	r0               = 1
-	medianR0         = 2.28 //https://pubmed.ncbi.nlm.nih.gov/32097725/ 2.06-2.52 95% CI 0,22/1.96 = 0.112
+	nNodes           = 490585 //4 // 4905854 number of people in Veneto
+	nEdges           = 150    //Dunbar number 150
+	bedPlaces        = 450    //https://www.aulss2.veneto.it/amministrazione-trasparente/disposizioni-generali/atti-generali/regolamenti?p_p_id=101&p_p_lifecycle=0&p_p_state=maximized&p_p_col_id=column-1&p_p_col_pos=22&p_p_col_count=24&_101_struts_action=%2Fasset_publisher%2Fview_content&_101_assetEntryId=10434368&_101_type=document
+	r0               = 5
+	medianR0         = 2.28  //https://pubmed.ncbi.nlm.nih.gov/32097725/ 2.06-2.52 95% CI 0,22/1.96 = 0.112
+	stdR0            = 0.112 //0.112
 	infectiveEpochs  = 14
 	simulationEpochs = 63
 	trials           = 1
+	deadRate         = 0.054
 )
 
 type person struct {
 	//Edges     []*person
 	//Id        uint32     `json:Id`
-	Edges []*relation `json:"Edges"`
-	//Edges        []uint32 `json:"Edges"`
-	//RelationType []byte   `json:"RelationType"`
-	Infective bool `json:"Infective"`
-	Survived  bool `json:"Survived"`
-	Dead      bool `json:"Dead"`
+	//Edges     []*relation `json:"Edges"`
+	Edges        []uint32 `json:"e"`
+	RelationType []string `json:"r"`
+	Infective    bool     `json:"-"`
+	Survived     bool     `json:"-"`
+	Dead         bool     `json:"-"`
 	//Age 			bool 	 	`json:"Age`
-	InfectiveEpochs uint32 // ottimizza, aumenta tot giorni per terapia intensiva (14+21)
+	InfectiveEpochs uint32 `json:"-"` // ottimizza, aumenta tot giorni per terapia intensiva (14+21)
+	InfectiveDays   []int8 `json:"-"`
 }
 
 // relationType
@@ -57,24 +60,55 @@ type relation struct {
 }
 
 // spreadingDesease runs a simulation over n epochs on a bigNet ([]person)
-func spreadingDesease(networkPointer *bigNet, epochs int, epochsResultsPointer *[simulationEpochs][3]int) error {
+func spreadingDesease(networkPointer *bigNet, epochs int, epochsResultsPointer *[simulationEpochs][5]int) error {
 	for epoch := 0; epoch < epochs; epoch++ {
 		// on epoch 0 choose a random node
 		healedCounter := 0
 
 		if epoch == 0 {
+			// pick a random infect over the graph
 			case0 := rand.Intn(nNodes)
-			(*networkPointer)[case0].Infective = true
-			(*networkPointer)[case0].InfectiveEpochs = infectiveEpochs
-			log.Println("CASE 0:", case0)
-			for r := 0; r < r0; r++ {
-				randomInfect := rand.Intn(len((*networkPointer)[case0].Edges))
-				infected := (*networkPointer)[case0].Edges[randomInfect]
-				if (*networkPointer)[infected.Id].InfectiveEpochs > 0 {
-					(*networkPointer)[infected.Id].Infective = true
-				}
 
+			(*networkPointer)[case0].Infective = true
+
+			log.Println("CASE 0:", case0)
+
+			infectiveDaysLen := len((*networkPointer)[case0].InfectiveDays)
+
+			for day := 0; day < infectiveDaysLen; day++ {
+				if (*networkPointer)[case0].InfectiveDays[day] == 0 {
+
+					// Add support to different measures
+					randomInfect := rand.Intn(len((*networkPointer)[case0].Edges))
+					infected := (*networkPointer)[case0].Edges[randomInfect]
+					if (*networkPointer)[infected].InfectiveEpochs > 0 {
+						(*networkPointer)[infected].Infective = true
+					}
+
+					// I set to -1 in order to not consider it anymore
+					(*networkPointer)[case0].InfectiveDays[day] = -1
+				} else if (*networkPointer)[case0].InfectiveDays[day] > 0 {
+					// Add support to different measures
+					randomInfect := rand.Intn(len((*networkPointer)[case0].Edges))
+					infected := (*networkPointer)[case0].Edges[randomInfect]
+					if (*networkPointer)[infected].InfectiveEpochs > 0 {
+						(*networkPointer)[infected].Infective = true
+					}
+					(*networkPointer)[case0].InfectiveDays[day]--
+				}
 			}
+
+			/*
+				// old code
+				for r := 0; r < r0; r++ {
+					randomInfect := rand.Intn(len((*networkPointer)[case0].Edges))
+					infected := (*networkPointer)[case0].Edges[randomInfect]
+					if (*networkPointer)[infected].InfectiveEpochs > 0 {
+						(*networkPointer)[infected].Infective = true
+					}
+
+				}
+			*/
 
 			result := reduceInfectiveEpochs(&(*networkPointer)[case0])
 			if result {
@@ -84,18 +118,54 @@ func spreadingDesease(networkPointer *bigNet, epochs int, epochsResultsPointer *
 			infected := getInfected(networkPointer)
 
 			for _, infectedID := range infected {
-				for r := 0; r < r0; r++ {
-					randomInfect := rand.Intn(len((*networkPointer)[infectedID].Edges))
-					infected := (*networkPointer)[infectedID].Edges[randomInfect]
 
-					if (*networkPointer)[infected.Id].Infective == false &&
-						(*networkPointer)[infected.Id].Dead == false &&
-						(*networkPointer)[infected.Id].Survived == false &&
-						(*networkPointer)[infected.Id].InfectiveEpochs > 0 {
-						(*networkPointer)[infected.Id].Infective = true
+				infectiveDaysLen := len((*networkPointer)[infectedID].InfectiveDays)
+
+				for day := 0; day < infectiveDaysLen; day++ {
+					if (*networkPointer)[infectedID].InfectiveDays[day] == 0 {
+
+						// Add support to different measures
+						randomInfect := rand.Intn(len((*networkPointer)[infectedID].Edges))
+						infected := (*networkPointer)[infectedID].Edges[randomInfect]
+
+						if (*networkPointer)[infected].Infective == false &&
+							(*networkPointer)[infected].Dead == false &&
+							(*networkPointer)[infected].Survived == false &&
+							(*networkPointer)[infected].InfectiveEpochs > 0 {
+							(*networkPointer)[infected].Infective = true
+						}
+
+						// I set to -1 in order to not consider it anymore
+						(*networkPointer)[infectedID].InfectiveDays[day] = -1
+					} else if (*networkPointer)[infectedID].InfectiveDays[day] > 0 {
+						// Add support to different measures
+						randomInfect := rand.Intn(len((*networkPointer)[infectedID].Edges))
+						infected := (*networkPointer)[infectedID].Edges[randomInfect]
+
+						if (*networkPointer)[infected].Infective == false &&
+							(*networkPointer)[infected].Dead == false &&
+							(*networkPointer)[infected].Survived == false &&
+							(*networkPointer)[infected].InfectiveEpochs > 0 {
+							(*networkPointer)[infected].Infective = true
+						}
+						(*networkPointer)[infectedID].InfectiveDays[day]--
 					}
-
 				}
+				/*
+					// old code
+					for r := 0; r < r0; r++ {
+						randomInfect := rand.Intn(len((*networkPointer)[infectedID].Edges))
+						infected := (*networkPointer)[infectedID].Edges[randomInfect]
+
+						if (*networkPointer)[infected].Infective == false &&
+							(*networkPointer)[infected].Dead == false &&
+							(*networkPointer)[infected].Survived == false &&
+							(*networkPointer)[infected].InfectiveEpochs > 0 {
+							(*networkPointer)[infected].Infective = true
+						}
+
+					}
+				*/
 				result := reduceInfectiveEpochs(&(*networkPointer)[infectedID])
 				if result {
 					healedCounter++
@@ -103,7 +173,7 @@ func spreadingDesease(networkPointer *bigNet, epochs int, epochsResultsPointer *
 			}
 
 		}
-		infectNumber := countInfected(networkPointer)
+		infectNumber := countInfected(networkPointer, true, false, false)
 		log.Println("EPOCH\t", epoch, "\tINFECTED:\t", infectNumber)
 		// number of infected today
 		(*epochsResultsPointer)[epoch][0] = infectNumber
@@ -115,13 +185,19 @@ func spreadingDesease(networkPointer *bigNet, epochs int, epochsResultsPointer *
 			(*epochsResultsPointer)[epoch][1] = infectNumber
 		}
 
-		// number of people healed
-		(*epochsResultsPointer)[epoch][0] = infectNumber
-		//log.Println(epoch, "*epochResultsPointer =", (*epochsResultsPointer)[epoch])
+		// number of total infected
+		(*epochsResultsPointer)[epoch][2] = countTotalInfected(networkPointer)
+		// number of total survived
+		(*epochsResultsPointer)[epoch][3] = countInfected(networkPointer, false, true, false)
+		// number of total dead
+		(*epochsResultsPointer)[epoch][4] = countInfected(networkPointer, false, false, true)
+
 		runtime.GC()
 	}
 	return nil
 }
+
+//func middlewareSpreading()
 
 func reduceInfectiveEpochs(personPointer *person) bool {
 	//log.Println("reduceInfective", personPointer.Infective, personPointer.Survived, personPointer.InfectiveEpochs)
@@ -131,7 +207,11 @@ func reduceInfectiveEpochs(personPointer *person) bool {
 	} else if personPointer.InfectiveEpochs == 1 {
 		personPointer.InfectiveEpochs--
 		personPointer.Infective = false
-		personPointer.Survived = true
+		if bernoulli(deadRate) {
+			personPointer.Dead = true
+		} else {
+			personPointer.Survived = true
+		}
 		return true
 		//log.Println("personPointer.InfectiveEpochs == 1", personPointer.Infective, personPointer.Survived, personPointer.InfectiveEpochs)
 	} else {
@@ -153,22 +233,58 @@ func getInfected(networkPointer *bigNet) []int {
 }
 
 // countInfected counts the total number of infected people
-func countInfected(networkPointer *bigNet) int {
+func countInfected(networkPointer *bigNet, infective, survived, dead bool) int {
 	counter := 0
 	for node := 0; node < nNodes; node++ {
-		/*
-			if (*networkPointer)[node].Infective == true ||
-				(*networkPointer)[node].Survived == true ||
-				(*networkPointer)[node].Dead == true {
-				counter++
-			}
-		*/
-		if (*networkPointer)[node].Infective == true {
+		if (*networkPointer)[node].Infective == infective &&
+			(*networkPointer)[node].Survived == survived &&
+			(*networkPointer)[node].Dead == dead {
 			counter++
 		}
 	}
 	//log.Println("INFECTED PEOPLE:", counter)
 	return counter
+}
+
+func countTotalInfected(networkPointer *bigNet) int {
+	counter := 0
+	for node := 0; node < nNodes; node++ {
+		if (*networkPointer)[node].Infective == true ||
+			(*networkPointer)[node].Survived == true ||
+			(*networkPointer)[node].Dead == true {
+			counter++
+		}
+	}
+	return counter
+}
+
+func resetNetwork(networkPointer *bigNet) {
+	for node := 0; node < nNodes; node++ {
+		rand.Seed(time.Now().UnixNano())
+		tmpR0 := int(math.Round(rand.NormFloat64()*stdR0 + medianR0))
+		if tmpR0 < 0 {
+			tmpR0 = 0
+		}
+
+		infectiveDays := make([]int8, tmpR0)
+
+		for r := 0; r < tmpR0; r++ {
+			infectiveDays[r] = int8(rand.Intn(infectiveEpochs))
+		}
+
+		(*networkPointer)[node].Infective = false
+		(*networkPointer)[node].Survived = false
+		(*networkPointer)[node].Dead = false
+		(*networkPointer)[node].InfectiveEpochs = infectiveEpochs
+		(*networkPointer)[node].InfectiveDays = infectiveDays
+	}
+}
+
+func bernoulli(pSuccess float64) bool {
+	if rand.Intn(10000) <= int(pSuccess*10000) {
+		return true
+	}
+	return false
 }
 
 func main() {
@@ -186,10 +302,24 @@ func main() {
 	rand.Seed(seed)
 	// initialize network
 	network := make(bigNet, nNodes)
-	var epochsResults [simulationEpochs][3]int
+	var epochsResults [simulationEpochs][5]int
 	// creating run folder
 	folderName := strconv.Itoa(int(time.Now().UnixNano()))
 	os.MkdirAll(folderName, os.ModePerm)
+
+	/*
+		// test bernoulli random generation
+		success, fail := 0, 0
+		for i := 0; i < 100; i++ {
+			if bernoulli(0.12) {
+				success++
+			} else {
+				fail++
+			}
+		}
+
+		log.Println("success:", success, "fail:", fail)
+	*/
 
 	// call python script *working*
 	/*
@@ -211,32 +341,55 @@ func main() {
 
 	if !*loadNetwork {
 		log.Println("Creating network...")
+
 		// init counter for relations assignment
 		//	'P': family relationship
 		//	'A': friends
 		//	'C': acquaintances
 		//	'O': others
-		counters := map[byte]int{
-			'P': 10,
-			'A': 10,
-			'C': 30,
-			'O': 100,
+		counters := map[string]int{
+			"P": 10,
+			"A": 10,
+			"C": 30,
+			"O": 100,
 		}
 		// array of relationship types
-		relTypes := [...]byte{'P', 'A', 'C', 'O'}
+		relTypes := [...]string{"P", "A", "C", "O"}
+		// edge map
+		//edjeMap := make(map[uint32]bool, nNodes)
 
 		for i := 0; i < nNodes; i++ {
+
+			rand.Seed(time.Now().UnixNano())
 			/*
 				if i%100000 == 0 && i != 0 {
 					runtime.GC()
 					log.Println(i)
 				} */
 
+			// initialize a map to avoid the generation of unique edje
+			//edjeMap[uint32(i)] = true
+
+			// Days where the node will infect others
+			tmpR0 := int(math.Round(rand.NormFloat64()*stdR0 + medianR0))
+			if tmpR0 < 0 {
+				tmpR0 = 0
+			}
+
+			infectiveDays := make([]int8, tmpR0)
+
+			for r := 0; r < tmpR0; r++ {
+				infectiveDays[r] = int8(rand.Intn(infectiveEpochs))
+			}
+			//b := rand.NormFloat64()*stdR0 + medianR0
+			//NormFloat64() * desiredStdDev + desiredMean
+
 			newNode := person{
 				Infective:       false,
 				Survived:        false,
 				Dead:            false,
-				InfectiveEpochs: uint32(rand.Intn(infectiveEpochs)),
+				InfectiveEpochs: infectiveEpochs, //uint32(rand.Intn(infectiveEpochs)),
+				InfectiveDays:   infectiveDays,
 			}
 
 			// this index is used to access relTypes byte array
@@ -247,15 +400,24 @@ func main() {
 				// generate a random ID
 				edgeID := uint32(rand.Intn(nNodes))
 				// check that the random ID is not equal to the vertex we are considering
-				if edgeID != uint32(i) {
-					// initialize the relation struct with the random ID
-					//newNode.Edges = append(newNode.Edges, edgeID)
-					//newNode.RelationType = append(newNode.RelationType, relTypes[currentIndex])
 
-					newNode.Edges = append(newNode.Edges, &relation{
-						Id:           edgeID,
-						RelationType: relTypes[currentIndex], // current Type of releation in generation
-					})
+				contained := false
+				for _, a := range newNode.Edges {
+					if a == edgeID {
+						contained = true
+					}
+				}
+
+				if edgeID != uint32(i) && !contained {
+					// initialize the relation struct with the random ID
+					newNode.Edges = append(newNode.Edges, edgeID)
+					newNode.RelationType = append(newNode.RelationType, relTypes[currentIndex])
+					//edjeMap[edgeID] = true
+					/*
+						newNode.Edges = append(newNode.Edges, &relation{
+							Id:           edgeID,
+							RelationType: relTypes[currentIndex], // current Type of releation in generation
+						}) */
 				}
 				// check if it is the last element of index to add
 				if counters[relTypes[currentIndex]] > 1 {
@@ -290,34 +452,6 @@ func main() {
 			ioutil.WriteFile(folderName+"/"+*fileNetwork, file, 0644)
 
 			log.Println("Written on json file.")
-			//ioutil.WriteFile("Network.json", file, 0644)
-
-			/* init new code
-			csvFile, err := os.Create(folderName + "/" + *fileNetwork)
-
-			if err != nil {
-				log.Fatalf("failed creating file: %s", err)
-			}
-
-			csvwriter := csv.NewWriter(csvFile)
-
-			for _, node := range network {
-				// convert row of []int into []string
-				var row [...]string{}
-				for i := 0; i < len(epoch); i++ {
-					row[i] = strconv.Itoa(epoch[i])
-				}
-				err = csvwriter.Write(row[:])
-
-				if err != nil {
-					log.Println("ERROR ON CREATING CSV:", err)
-				}
-			}
-
-			csvwriter.Flush()
-			csvFile.Close()
-			*/
-			// end new code
 
 			runtime.GC()
 			log.Println("Garbage Collector freed.")
@@ -335,8 +469,11 @@ func main() {
 	// Montecarlo Simulation
 
 	for i := 0; i < *mctrials; i++ {
+		log.Println("TRIAL:\t", i, "______________________________")
 		spreadingDesease(&network, simulationEpochs, &epochsResults)
-		log.Println(i, "\t statistics...")
+		log.Println("clear graph network...")
+		resetNetwork(&network)
+		// compute CI ecc
 		// CI: INFETTI TOTALI
 		// CI: MORTI TOTALI
 		// CI: GUARITI TOTALI
