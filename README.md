@@ -33,6 +33,14 @@ and if you want also to compute the CI over all the three metrics [Total Cases, 
 go run . -loadnet=true -mctrials=100 -computeCI=true
 ```
 
+### List of all flags
+- **-loadnet**: default value is false, if true it load a network from a file called Network.json, to change the loading file name check flag namenet
+- **-savenet**: default value is false, if true saves network on timestamp/Network.json
+- **-namenet**: default value is Network.json, it's the name of the network file
+- **-mctrials**: default value is 1, you can choose how many trials run on the Montecarlo Simulation
+- **-computeCI**: default value is false, set to true when use flag -mctrials > 1 to get Confidence Intervals of metrics
+- **-runpyscript**: default valuse is false, set to true if you want to print graphs of simulation with matplotlib
+
 ## Examples
 In the example folder you can find the results in .csv format for couple simulations with the same virus, but applying containment measures vs no measures.
 
@@ -45,13 +53,13 @@ The containment measures are:
 - Musk: from day 30 with prevention probability of 95% cases of contact
 - Social Distance: from day 40 with contact allowed only between parents and friends
 
-### List of all flags
-- **-loadnet**: default value is false, if true it load a network from a file called Network.json, to change the loading file name check flag namenet
-- **-savenet**: default value is false, if true saves network on timestamp/Network.json
-- **-namenet**: default value is Network.json, it's the name of the network file
-- **-mctrials**: default value is 1, you can choose how many trials run on the Montecarlo Simulation
-- **-computeCI**: default value is false, set to true when use flag -mctrials > 1 to get Confidence Intervals of metrics
-- **-runpyscript**: default valuse is false, set to true if you want to print graphs of simulation with matplotlib
+### How to Read Data
+The exported .csv files header is the following:
+- ACTIVE CASES
+- NEW CASES RESPECT YESTERDAY
+- TOTAL CASES
+- SURVIVED CASES
+- DEAD CASES
 
 ### 🚀 Project Timeline
 - [X] Defining Main Project Objectives

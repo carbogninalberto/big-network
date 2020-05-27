@@ -250,7 +250,7 @@ func main() {
 	if *runPyScript {
 		log.Println("Calling Python script...")
 
-		out, err := exec.Command("python", "./plotgraphs.py").Output()
+		out, err := exec.Command("python", "./Scripts/plotgraphs.py").Output()
 
 		if err != nil {
 			log.Panicln("ERROR ON EXECUTING PYTHON SCRIPT", err)

@@ -1,0 +1,23 @@
+Creazione di un grafo con circa 4mln di nodi e un numero di relazioni per nodo pari a 150, dove ogni relazione può essere di 4 tipi diversi:
+Parente/affetti
+Amici
+Conoscenti (compagni, colleghi)
+Altro
+
+Suddividere le 150 relazioni nel seguente modo:
+10 Parenti
+10 Amici
+30 Conoscenti
+100 Altro
+
+Questa suddivisione ci permette di testare gli effetti del lockdown in quanto ogni tipologia di relazione avviene con una frequenza diversa, ad esempio:
+0.4 Parenti
+0.2 Amici
+0.1-0.5 Conoscenti/Colleghi
+0.05 Altro
+
+A questo punto senza misure di sicurezza si può calcolare che una persona entra in media in contatto in un giorno con:
+
+ncontatti=0.8 * 10 +0.2 * 10 + 0.3*30 + 0.05 * 100 
+
+Inoltre, si calcola che circa il numero di infetti sia ncontatti*tassotrasmissibilità dove il tasso di trasmissibilità è calcolato random a partire da un r0 che viene preso come valore medio di una normale distribuita ed una deviazione standard dal CI.
