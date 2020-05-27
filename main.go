@@ -22,15 +22,19 @@ type bigNet []person
 
 // Hyperparameters configuration of Simulation
 const (
-	nNodes           = 49058 //5 //4 // 4905854 number of people in Veneto
-	nEdges           = 150   //Dunbar number 150
-	bedPlaces        = 450   //https://www.aulss2.veneto.it/amministrazione-trasparente/disposizioni-generali/atti-generali/regolamenti?p_p_id=101&p_p_lifecycle=0&p_p_state=maximized&p_p_col_id=column-1&p_p_col_pos=22&p_p_col_count=24&_101_struts_action=%2Fasset_publisher%2Fview_content&_101_assetEntryId=10434368&_101_type=document
-	medianR0         = 2.28  //https://pubmed.ncbi.nlm.nih.gov/32097725/ 2.06-2.52 95% CI 0,22/1.96 = 0.112
-	stdR0            = 0.112 //0.112
+	ISDEBUG          = false
+	nNodes           = 490585 //4 // 4905854 number of people in Veneto
+	nEdges           = 150    //Dunbar number 150
+	bedPlaces        = 450    //https://www.aulss2.veneto.it/amministrazione-trasparente/disposizioni-generali/atti-generali/regolamenti?p_p_id=101&p_p_lifecycle=0&p_p_state=maximized&p_p_col_id=column-1&p_p_col_pos=22&p_p_col_count=24&_101_struts_action=%2Fasset_publisher%2Fview_content&_101_assetEntryId=10434368&_101_type=document
+	medianR0         = 5      //2.28  //https://pubmed.ncbi.nlm.nih.gov/32097725/ 2.06-2.52 95% CI 0,22/1.96 = 0.112
+	stdR0            = 0.8    //0.112
 	infectiveEpochs  = 14
-	simulationEpochs = 63
+	simulationEpochs = 120
 	trials           = 1
 	deadRate         = 0.054
+	muskEpoch        = -1   //30   //starting epoch of musk set -1 to disable
+	muskProb         = 0.95 //prevention probability
+	socDisEpoch      = -1   //40	//starting epoch of social distacing set -1 to disable
 )
 
 type person struct {
@@ -41,112 +45,6 @@ type person struct {
 	Dead            bool     `json:"-"`
 	InfectiveEpochs uint32   `json:"-"` // ottimizza per terapia intensiva (14+21)
 	InfectiveDays   []int8   `json:"-"`
-}
-
-// spreadingDesease runs a simulation over n epochs on a bigNet ([]person)
-func spreadingDesease(networkPointer *bigNet, epochs int, epochsResultsPointer *[simulationEpochs][5]int) error {
-	for epoch := 0; epoch < epochs; epoch++ {
-
-		if epoch == 0 {
-			// pick a random infect over the graph
-			case0 := rand.Intn(nNodes)
-			(*networkPointer)[case0].Infective = true
-			log.Println("CASE 0:", case0)
-			infectiveDaysLen := len((*networkPointer)[case0].InfectiveDays)
-
-			for day := 0; day < infectiveDaysLen; day++ {
-				if (*networkPointer)[case0].InfectiveDays[day] == 0 {
-
-					// Add support to different measures
-					randomInfect := rand.Intn(len((*networkPointer)[case0].Edges))
-					infected := (*networkPointer)[case0].Edges[randomInfect]
-					if (*networkPointer)[infected].InfectiveEpochs > 0 {
-						(*networkPointer)[infected].Infective = true
-					}
-
-					// I set to -1 in order to not consider it anymore
-					(*networkPointer)[case0].InfectiveDays[day] = -1
-
-				} else if (*networkPointer)[case0].InfectiveDays[day] > 0 {
-
-					// Add support to different measures
-					randomInfect := rand.Intn(len((*networkPointer)[case0].Edges))
-					infected := (*networkPointer)[case0].Edges[randomInfect]
-					if (*networkPointer)[infected].InfectiveEpochs > 0 {
-						(*networkPointer)[infected].Infective = true
-					}
-					(*networkPointer)[case0].InfectiveDays[day]--
-				}
-			}
-			// make time pass and reduce the remaining infective days
-			_ = reduceInfectiveEpochs(&(*networkPointer)[case0])
-
-		} else {
-			infected := getInfected(networkPointer)
-
-			for _, infectedID := range infected {
-
-				infectiveDaysLen := len((*networkPointer)[infectedID].InfectiveDays)
-
-				for day := 0; day < infectiveDaysLen; day++ {
-					if (*networkPointer)[infectedID].InfectiveDays[day] == 0 {
-
-						// Add support to different measures
-						randomInfect := rand.Intn(len((*networkPointer)[infectedID].Edges))
-						infected := (*networkPointer)[infectedID].Edges[randomInfect]
-
-						if (*networkPointer)[infected].Infective == false &&
-							(*networkPointer)[infected].Dead == false &&
-							(*networkPointer)[infected].Survived == false &&
-							(*networkPointer)[infected].InfectiveEpochs > 0 {
-							(*networkPointer)[infected].Infective = true
-						}
-
-						// I set to -1 in order to not consider it anymore
-						(*networkPointer)[infectedID].InfectiveDays[day] = -1
-					} else if (*networkPointer)[infectedID].InfectiveDays[day] > 0 {
-						// Add support to different measures
-						randomInfect := rand.Intn(len((*networkPointer)[infectedID].Edges))
-						infected := (*networkPointer)[infectedID].Edges[randomInfect]
-
-						if (*networkPointer)[infected].Infective == false &&
-							(*networkPointer)[infected].Dead == false &&
-							(*networkPointer)[infected].Survived == false &&
-							(*networkPointer)[infected].InfectiveEpochs > 0 {
-							(*networkPointer)[infected].Infective = true
-						}
-						(*networkPointer)[infectedID].InfectiveDays[day]--
-					}
-				}
-
-				// make time pass and reduce the remaining infective days
-				_ = reduceInfectiveEpochs(&(*networkPointer)[infectedID])
-			}
-		}
-
-		infectNumber := countInfected(networkPointer, true, false, false)
-		log.Println("EPOCH\t", epoch, "\tINFECTED:\t", infectNumber)
-
-		// number of infected today
-		(*epochsResultsPointer)[epoch][0] = infectNumber
-		// new number of infected today regards yesterday
-		if epoch != 0 {
-			lastInfected := (*epochsResultsPointer)[epoch-1][0]
-			(*epochsResultsPointer)[epoch][1] = infectNumber - int(lastInfected)
-		} else {
-			(*epochsResultsPointer)[epoch][1] = infectNumber
-		}
-
-		// number of total infected
-		(*epochsResultsPointer)[epoch][2] = countTotalInfected(networkPointer)
-		// number of total survived
-		(*epochsResultsPointer)[epoch][3] = countInfected(networkPointer, false, true, false)
-		// number of total dead
-		(*epochsResultsPointer)[epoch][4] = countInfected(networkPointer, false, false, true)
-
-		runtime.GC()
-	}
-	return nil
 }
 
 func main() {
@@ -287,10 +185,27 @@ func main() {
 		log.Println("Network loaded.")
 	}
 
+	// Allocating Policy Measure
+	muskPointer := &muskMeasure{
+		Active:    true,
+		FromEpoch: muskEpoch,
+		Psucc:     muskProb,
+	}
+	socialDistancingPointer := &socialDistancingMeasure{
+		Active:    true,
+		FromEpoch: socDisEpoch,
+		AllowContacts: map[string]bool{
+			"P": true,
+			"A": true,
+			"C": false,
+			"O": false,
+		},
+	}
+
 	// Montecarlo Simulation
 	for i := 0; i < *mctrials; i++ {
 		log.Println("TRIAL:\t", i, "______________________________")
-		spreadingDesease(&network, simulationEpochs, &epochsResults)
+		spreadingDesease(&network, simulationEpochs, &epochsResults, muskPointer, socialDistancingPointer)
 		log.Println("clear graph network...")
 		resetNetwork(&network)
 		if *computeCI {

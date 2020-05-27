@@ -21,5 +21,3 @@ A questo punto senza misure di sicurezza si può calcolare che una persona entra
 ncontatti=0.8 * 10 +0.2 * 10 + 0.3*30 + 0.05 * 100 
 
 Inoltre, si calcola che circa il numero di infetti sia ncontatti*tassotrasmissibilità dove il tasso di trasmissibilità è calcolato random a partire da un r0 che viene preso come valore medio di una normale distribuita ed una deviazione standard dal CI.
-
-

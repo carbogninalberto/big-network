@@ -33,7 +33,17 @@ and if you want also to compute the CI over all the three metrics [Total Cases, 
 go run . -loadnet=true -mctrials=100 -computeCI=true
 ```
 
+## Examples
+In the example folder you can find the results in .csv format for couple simulations with the same virus, but applying containment measures vs no measures.
 
+The virus information are:
+- R0: median 5, std 0.8
+- Infective Epochs: 14
+- Dead Rate: 5.4%
+
+The containment measures are:
+- Musk: from day 30 with prevention probability of 95% cases of contact
+- Social Distance: from day 40 with contact allowed only between parents and friends
 
 ### List of all flags
 - **-loadnet**: default value is false, if true it load a network from a file called Network.json, to change the loading file name check flag namenet
