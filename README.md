@@ -1,6 +1,20 @@
-# SPREADING DISEASE SIMULATION
+<h1 align="center">SPREADING DISEASE SIMULATION</h1>
+<div align="center">
+<img widht="256" height="256" src=".github/logo.png">
+</div>
 
-## Preliminary states
+# Table of Contents
+- [Introduction](#introduction)
+- [Installation](#installation)
+- [Simulation](#simulation)
+  - [List of available flags](#list-of-available-flags)
+- [Examples](#examples)
+  - [Header Data](#header-data)
+- [🚀 Project Timeline](#🚀-project-timeline)
+
+# Introduction
+
+# Installation
 If you don't have already generated a Network.json file in your project folder run the following:
 
 ```
@@ -19,7 +33,7 @@ In order to avoid running the simulation run the generation of the network with:
 go run . -savenet=true -mctrials=0
 ```
 
-## How to run the simulation 
+# Simulation
 
 If you want to run a Montecarlo Simulation you chan choose how many trials to run, for example for 100 trials:
 
@@ -33,7 +47,7 @@ and if you want also to compute the CI over all the three metrics [Total Cases, 
 go run . -loadnet=true -mctrials=100 -computeCI=true
 ```
 
-### List of all flags
+## List of available flags
 - **-loadnet**: default value is false, if true it load a network from a file called Network.json, to change the loading file name check flag namenet
 - **-savenet**: default value is false, if true saves network on timestamp/Network.json
 - **-namenet**: default value is Network.json, it's the name of the network file
@@ -41,7 +55,7 @@ go run . -loadnet=true -mctrials=100 -computeCI=true
 - **-computeCI**: default value is false, set to true when use flag -mctrials > 1 to get Confidence Intervals of metrics
 - **-runpyscript**: default valuse is false, set to true if you want to print graphs of simulation with matplotlib
 
-## Examples
+# Examples
 In the example folder you can find the results in .csv format for couple simulations with the same virus, but applying containment measures vs no measures.
 
 The virus information are:
@@ -53,7 +67,7 @@ The containment measures are:
 - Musk: from day 30 with prevention probability of 95% cases of contact
 - Social Distance: from day 40 with contact allowed only between parents and friends
 
-### How to Read Data
+## Header Data
 The exported .csv files header is the following:
 - ACTIVE CASES
 - NEW CASES RESPECT YESTERDAY
@@ -61,7 +75,7 @@ The exported .csv files header is the following:
 - SURVIVED CASES
 - DEAD CASES
 
-### 🚀 Project Timeline
+# 🚀 Project Timeline
 - [X] Defining Main Project Objectives
 - [X] Create a Big Network Graph of the Population
 - [X] Gather Information about Italian Hospitals
