@@ -39,6 +39,7 @@ const (
 	muskEpoch           = -1   //30   //starting epoch of musk set -1 to disable
 	muskProb            = 0.95 //prevention probability
 	socDisEpoch         = -1   //40	//starting epoch of social distacing set -1 to disable
+	incubationEpochs    = 0    //number of epochs in incubation
 )
 
 type person struct {
@@ -106,7 +107,7 @@ func main() {
 			infectiveDays := make([]int8, tmpR0)
 
 			for r := 0; r < tmpR0; r++ {
-				infectiveDays[r] = int8(rand.Intn(infectiveEpochs))
+				infectiveDays[r] = int8(rand.Intn(infectiveEpochs-incubationEpochs) + incubationEpochs)
 			}
 
 			newNode := person{
