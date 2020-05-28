@@ -1,4 +1,4 @@
-<h1 align="center">SPREADING DISEASE SIMULATION</h1>
+<h1 align="center">🦠😷🧼🏥SPREADING DISEASE SIMULATION🦠😷🧼🏥</h1>
 <div align="center">
 <img widht="256" height="256" src=".github/logo.png">
 </div>
@@ -10,7 +10,7 @@
   - [List of available flags](#list-of-available-flags)
 - [Examples](#examples)
   - [Header Data](#header-data)
-- [🚀 Project Timeline](#🚀-project-timeline)
+- [Project Timeline](#project-timeline)
 
 # Introduction
 
@@ -75,7 +75,7 @@ The exported .csv files header is the following:
 - SURVIVED CASES
 - DEAD CASES
 
-# 🚀 Project Timeline
+# Project Timeline
 - [X] Defining Main Project Objectives
 - [X] Create a Big Network Graph of the Population
 - [X] Gather Information about Italian Hospitals
