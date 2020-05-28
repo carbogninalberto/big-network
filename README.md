@@ -15,6 +15,7 @@
 # Introduction
 
 # Installation
+Assuming that you have golang installed on your machine [here instructions](#https://golang.org/doc/install).
 If you don't have already generated a Network.json file in your project folder run the following:
 
 ```
