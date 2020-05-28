@@ -6,8 +6,16 @@ import (
 	"runtime"
 )
 
+// nationalHealthcareSystem SSN
+type nationalHealthcareSystem struct {
+	intensiveCare                   int
+	subIntensiveCare                int
+	intensiveCareHospitalization    []uint32
+	subIntensiveCareHospitalization []uint32
+}
+
 // spreadingDesease runs a simulation over n epochs on a bigNet ([]person)
-func spreadingDesease(networkPointer *bigNet, epochs int, epochsResultsPointer *[simulationEpochs][5]int, muskPointer *muskMeasure, socialDistancePointer *socialDistancingMeasure) error {
+func spreadingDesease(networkPointer *bigNet, epochs int, epochsResultsPointer *[simulationEpochs][5]int, muskPointer *muskMeasure, socialDistancePointer *socialDistancingMeasure, ssnPointer *nationalHealthcareSystem) error {
 	for epoch := 0; epoch < epochs; epoch++ {
 
 		if epoch == 0 {
@@ -23,8 +31,26 @@ func spreadingDesease(networkPointer *bigNet, epochs int, epochsResultsPointer *
 					isInfected, infected := middlewareContainmentMeasure(&(*networkPointer)[case0], muskPointer, socialDistancePointer, epoch)
 
 					if isInfected {
+
 						if (*networkPointer)[infected].InfectiveEpochs > 0 {
-							(*networkPointer)[infected].Infective = true
+							// Check if Healthcare is neeeded
+							requireHealthcare, typeHealthcare := bernoulliHealthcare(pIntensiveCare, pSubIntensiveCare)
+							if requireHealthcare {
+								// if Healthcare needed, check if there are bed available
+								addedToSSN := addToSSN(ssnPointer, uint32(infected), typeHealthcare)
+								if addedToSSN {
+									// if added to SSN can still infect others
+									(*networkPointer)[infected].Infective = true
+									(*networkPointer)[infected].InfectiveEpochs += hospitalDays
+								} else {
+									// if not possible to add to SSN the patient is dead
+									//log.Println("NO BED AVAILABLE")
+									(*networkPointer)[infected].InfectiveEpochs = 0
+									(*networkPointer)[infected].Dead = true
+								}
+							} else {
+								(*networkPointer)[infected].Infective = true
+							}
 						}
 					}
 
@@ -36,7 +62,7 @@ func spreadingDesease(networkPointer *bigNet, epochs int, epochsResultsPointer *
 				}
 			}
 			// make time pass and reduce the remaining infective days
-			_ = reduceInfectiveEpochs(&(*networkPointer)[case0])
+			_ = reduceInfectiveEpochs(&(*networkPointer)[case0], ssnPointer, uint32(case0))
 
 		} else {
 			infected := getInfected(networkPointer)
@@ -55,7 +81,26 @@ func spreadingDesease(networkPointer *bigNet, epochs int, epochsResultsPointer *
 								(*networkPointer)[infected].Dead == false &&
 								(*networkPointer)[infected].Survived == false &&
 								(*networkPointer)[infected].InfectiveEpochs > 0 {
-								(*networkPointer)[infected].Infective = true
+
+								// Check if Healthcare is neeeded
+								requireHealthcare, typeHealthcare := bernoulliHealthcare(pIntensiveCare, pSubIntensiveCare)
+								if requireHealthcare {
+									// if Healthcare needed, check if there are bed available
+									addedToSSN := addToSSN(ssnPointer, uint32(infected), typeHealthcare)
+									if addedToSSN {
+										// if added to SSN can still infect others
+										(*networkPointer)[infected].Infective = true
+										(*networkPointer)[infected].InfectiveEpochs += hospitalDays
+									} else {
+										//log.Println("NO BED AVAILABLE")
+										// if not possible to add to SSN the patient is dead
+										(*networkPointer)[infected].InfectiveEpochs = 0
+										(*networkPointer)[infected].Dead = true
+									}
+								} else {
+									(*networkPointer)[infected].Infective = true
+								}
+
 							}
 						}
 
@@ -67,12 +112,15 @@ func spreadingDesease(networkPointer *bigNet, epochs int, epochsResultsPointer *
 				}
 
 				// make time pass and reduce the remaining infective days
-				_ = reduceInfectiveEpochs(&(*networkPointer)[infectedID])
+				_ = reduceInfectiveEpochs(&(*networkPointer)[infectedID], ssnPointer, uint32(infectedID))
 			}
 		}
 
 		infectNumber := countInfected(networkPointer, true, false, false)
-		log.Println("EPOCH\t", epoch, "\tINFECTED:\t", infectNumber)
+		log.Println("EPOCH\t", epoch,
+			"\tACTIVE:\t", infectNumber,
+			"\t\tINT.CARE:\t", len((*ssnPointer).intensiveCareHospitalization),
+			"\tSUB.INT.CARE:", len((*ssnPointer).subIntensiveCareHospitalization))
 
 		// number of infected today
 		(*epochsResultsPointer)[epoch][0] = infectNumber

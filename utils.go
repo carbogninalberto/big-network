@@ -8,7 +8,7 @@ import (
 )
 
 // reduceInfectiveEpochs returns true if person is no more infective
-func reduceInfectiveEpochs(personPointer *person) bool {
+func reduceInfectiveEpochs(personPointer *person, ssnPointer *nationalHealthcareSystem, id uint32) bool {
 	if personPointer.InfectiveEpochs > 1 {
 		personPointer.InfectiveEpochs--
 	} else if personPointer.InfectiveEpochs == 1 {
@@ -20,6 +20,9 @@ func reduceInfectiveEpochs(personPointer *person) bool {
 		} else {
 			personPointer.Survived = true
 		}
+
+		_ = removeFromSSN(ssnPointer, id)
+
 		return true
 	} else {
 		log.Println("ERROR", personPointer.InfectiveEpochs)
@@ -97,8 +100,72 @@ func resetNetwork(networkPointer *bigNet) {
 
 // bernoulli is a simple implementation that returns true with a certain pSuccess probability
 func bernoulli(pSuccess float64) bool {
+	// random seed
+	rand.Seed(time.Now().UnixNano())
 	if rand.Intn(10000) < int(pSuccess*10000) {
 		return true
 	}
 	return false
+}
+
+// addToSSN returns false if it cannot be added to SSN
+func addToSSN(ssnPointer *nationalHealthcareSystem, ID uint32, intensiveCare bool) bool {
+
+	if intensiveCare &&
+		(len((*ssnPointer).intensiveCareHospitalization)+1 <= (*ssnPointer).intensiveCare) {
+		// add to intensive care if is not full
+		(*ssnPointer).intensiveCareHospitalization = append((*ssnPointer).intensiveCareHospitalization, ID)
+		return true
+	} else if !intensiveCare &&
+		(len((*ssnPointer).subIntensiveCareHospitalization)+1 <= (*ssnPointer).subIntensiveCare) {
+		// add to sub intensive care if is not full
+		(*ssnPointer).subIntensiveCareHospitalization = append((*ssnPointer).subIntensiveCareHospitalization, ID)
+		return true
+	}
+	return false
+}
+
+// removeFromSSN
+func removeFromSSN(ssnPointer *nationalHealthcareSystem, ID uint32) bool {
+	intensiveLen := len((*ssnPointer).intensiveCareHospitalization)
+	subIntensiveLen := len((*ssnPointer).subIntensiveCareHospitalization)
+	// check if ID is on intensive care
+	for i := 0; i < intensiveLen; i++ {
+		if (*ssnPointer).intensiveCareHospitalization[i] == ID {
+			(*ssnPointer).intensiveCareHospitalization = removeElementId((*ssnPointer).intensiveCareHospitalization, i)
+			return true
+		}
+	}
+	// ceck if ID is on sub intensive care
+	for i := 0; i < subIntensiveLen; i++ {
+		if (*ssnPointer).subIntensiveCareHospitalization[i] == ID {
+			(*ssnPointer).subIntensiveCareHospitalization = removeElementId((*ssnPointer).subIntensiveCareHospitalization, i)
+			return true
+		}
+	}
+	// not found on SSN
+	return false
+}
+
+// bernoulliHealthcare compute if Hospitalization is required and what kind
+// Type of hospitalization: true intensive, false subintensive
+func bernoulliHealthcare(pIntensive, pSubIntensive float64) (bool, bool) {
+	rand.Seed(time.Now().UnixNano()) //set a new casual seed
+	// check if requires intensive Care
+	intensiveHospitalization := bernoulli(pIntensive)
+	if !intensiveHospitalization {
+		// if not intensive care, check if sub Intensive care
+		subIntensiveHospitalization := bernoulli(pSubIntensive)
+		if !subIntensiveHospitalization {
+			// if any kind of hospitalization required
+			return false, false
+		}
+		return true, false
+	}
+	return true, true
+}
+
+// remove element at certain ID
+func removeElementId(s []uint32, i int) []uint32 {
+	return append(s[:i], s[i+1:]...)
 }

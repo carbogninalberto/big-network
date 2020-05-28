@@ -22,19 +22,23 @@ type bigNet []person
 
 // Hyperparameters configuration of Simulation
 const (
-	ISDEBUG          = false
-	nNodes           = 490585 //4 // 4905854 number of people in Veneto
-	nEdges           = 150    //Dunbar number 150
-	bedPlaces        = 450    //https://www.aulss2.veneto.it/amministrazione-trasparente/disposizioni-generali/atti-generali/regolamenti?p_p_id=101&p_p_lifecycle=0&p_p_state=maximized&p_p_col_id=column-1&p_p_col_pos=22&p_p_col_count=24&_101_struts_action=%2Fasset_publisher%2Fview_content&_101_assetEntryId=10434368&_101_type=document
-	medianR0         = 5      //2.28  //https://pubmed.ncbi.nlm.nih.gov/32097725/ 2.06-2.52 95% CI 0,22/1.96 = 0.112
-	stdR0            = 0.8    //0.112
-	infectiveEpochs  = 14
-	simulationEpochs = 120
-	trials           = 1
-	deadRate         = 0.054
-	muskEpoch        = -1   //30   //starting epoch of musk set -1 to disable
-	muskProb         = 0.95 //prevention probability
-	socDisEpoch      = -1   //40	//starting epoch of social distacing set -1 to disable
+	ISDEBUG             = false
+	nNodes              = 490585 //4 // 4905854 number of people in Veneto
+	nEdges              = 150    //Dunbar number 150
+	bedIntensiveCare    = 450    //https://www.aulss2.veneto.it/amministrazione-trasparente/disposizioni-generali/atti-generali/regolamenti?p_p_id=101&p_p_lifecycle=0&p_p_state=maximized&p_p_col_id=column-1&p_p_col_pos=22&p_p_col_count=24&_101_struts_action=%2Fasset_publisher%2Fview_content&_101_assetEntryId=10434368&_101_type=document
+	bedSubIntensiveCare = 12000  //number of beds
+	pIntensiveCare      = 0.02   //probability of requiring intensive Care
+	pSubIntensiveCare   = 0.15   //probability of requiring sub intensive care
+	hospitalDays        = 7      //the number of day to add to the duration of the disease
+	medianR0            = 5      //2.28  //https://pubmed.ncbi.nlm.nih.gov/32097725/ 2.06-2.52 95% CI 0,22/1.96 = 0.112
+	stdR0               = 0.8    //0.112
+	infectiveEpochs     = 14
+	simulationEpochs    = 120
+	trials              = 1
+	deadRate            = 0.054
+	muskEpoch           = -1   //30   //starting epoch of musk set -1 to disable
+	muskProb            = 0.95 //prevention probability
+	socDisEpoch         = -1   //40	//starting epoch of social distacing set -1 to disable
 )
 
 type person struct {
@@ -201,11 +205,16 @@ func main() {
 			"O": false,
 		},
 	}
+	// Allocating SSN (National Healthcare System)
+	ssnPointer := &nationalHealthcareSystem{
+		intensiveCare:    bedIntensiveCare,
+		subIntensiveCare: bedSubIntensiveCare,
+	}
 
 	// Montecarlo Simulation
 	for i := 0; i < *mctrials; i++ {
 		log.Println("TRIAL:\t", i, "______________________________")
-		spreadingDesease(&network, simulationEpochs, &epochsResults, muskPointer, socialDistancingPointer)
+		spreadingDesease(&network, simulationEpochs, &epochsResults, muskPointer, socialDistancingPointer, ssnPointer)
 		log.Println("clear graph network...")
 		resetNetwork(&network)
 		if *computeCI {
