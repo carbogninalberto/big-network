@@ -1,4 +1,4 @@
-<h1 align="center">🦠😷🧼🏥SPREADING DISEASE SIMULATION🦠😷🧼🏥</h1>
+<h1 align="center">😷🧼 SPREADING DISEASE SIMULATION</h1>
 <div align="center">
 <img widht="256" height="256" src=".github/logo.png">
 </div>
