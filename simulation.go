@@ -15,7 +15,7 @@ type nationalHealthcareSystem struct {
 }
 
 // spreadingDesease runs a simulation over n epochs on a bigNet ([]person)
-func spreadingDesease(networkPointer *bigNet, epochs int, epochsResultsPointer *[simulationEpochs][5]int, muskPointer *muskMeasure, socialDistancePointer *socialDistancingMeasure, ssnPointer *nationalHealthcareSystem) error {
+func spreadingDesease(networkPointer *bigNet, epochs int, epochsResultsPointer *[simulationEpochs][5]int, muskPointer *muskMeasure, socialDistancePointer *socialDistancingMeasure, ssnPointer *nationalHealthcareSystem, trialsResultsPointer *[][3]int, trial int) error {
 	for epoch := 0; epoch < epochs; epoch++ {
 
 		if epoch == 0 {
@@ -138,6 +138,13 @@ func spreadingDesease(networkPointer *bigNet, epochs int, epochsResultsPointer *
 		(*epochsResultsPointer)[epoch][3] = countInfected(networkPointer, false, true, false)
 		// number of total dead
 		(*epochsResultsPointer)[epoch][4] = countInfected(networkPointer, false, false, true)
+
+		// assign number of total infected to col 0 of trial
+		(*trialsResultsPointer)[trial][0] += (*epochsResultsPointer)[epoch][2]
+		// assign number of total survived to col 1 of trial
+		(*trialsResultsPointer)[trial][1] += (*epochsResultsPointer)[epoch][3]
+		// assign number of total dead to col 2 of trial
+		(*trialsResultsPointer)[trial][2] += (*epochsResultsPointer)[epoch][4]
 
 		runtime.GC()
 	}

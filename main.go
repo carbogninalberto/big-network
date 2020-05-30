@@ -23,18 +23,17 @@ type bigNet []person
 // Hyperparameters configuration of Simulation
 const (
 	ISDEBUG             = false
-	nNodes              = 490585 //4 // 4905854 number of people in Veneto
-	nEdges              = 150    //Dunbar number 150
-	bedIntensiveCare    = 450    //https://www.aulss2.veneto.it/amministrazione-trasparente/disposizioni-generali/atti-generali/regolamenti?p_p_id=101&p_p_lifecycle=0&p_p_state=maximized&p_p_col_id=column-1&p_p_col_pos=22&p_p_col_count=24&_101_struts_action=%2Fasset_publisher%2Fview_content&_101_assetEntryId=10434368&_101_type=document
-	bedSubIntensiveCare = 12000  //number of beds
-	pIntensiveCare      = 0.02   //probability of requiring intensive Care
-	pSubIntensiveCare   = 0.15   //probability of requiring sub intensive care
-	hospitalDays        = 7      //the number of day to add to the duration of the disease
-	medianR0            = 5      //2.28  //https://pubmed.ncbi.nlm.nih.gov/32097725/ 2.06-2.52 95% CI 0,22/1.96 = 0.112
-	stdR0               = 0.8    //0.112
+	nNodes              = 4905  //85 //4 // 4905854 number of people in Veneto
+	nEdges              = 150   //Dunbar number 150
+	bedIntensiveCare    = 450   //https://www.aulss2.veneto.it/amministrazione-trasparente/disposizioni-generali/atti-generali/regolamenti?p_p_id=101&p_p_lifecycle=0&p_p_state=maximized&p_p_col_id=column-1&p_p_col_pos=22&p_p_col_count=24&_101_struts_action=%2Fasset_publisher%2Fview_content&_101_assetEntryId=10434368&_101_type=document
+	bedSubIntensiveCare = 12000 //number of beds
+	pIntensiveCare      = 0.02  //probability of requiring intensive Care
+	pSubIntensiveCare   = 0.15  //probability of requiring sub intensive care
+	hospitalDays        = 7     //the number of day to add to the duration of the disease
+	medianR0            = 5     //2.28  //https://pubmed.ncbi.nlm.nih.gov/32097725/ 2.06-2.52 95% CI 0,22/1.96 = 0.112
+	stdR0               = 0.8   //0.112
 	infectiveEpochs     = 14
-	simulationEpochs    = 120
-	trials              = 1
+	simulationEpochs    = 30
 	deadRate            = 0.054
 	muskEpoch           = -1   //30   //starting epoch of musk set -1 to disable
 	muskProb            = 0.95 //prevention probability
@@ -70,6 +69,7 @@ func main() {
 	// initialize network
 	network := make(bigNet, nNodes)
 	var epochsResults [simulationEpochs][5]int
+	var trialsResults = make([][3]int, *mctrials)
 	// creating run folder
 	folderName := strconv.Itoa(int(time.Now().UnixNano()))
 	os.MkdirAll(folderName, os.ModePerm)
@@ -215,7 +215,7 @@ func main() {
 	// Montecarlo Simulation
 	for i := 0; i < *mctrials; i++ {
 		log.Println("TRIAL:\t", i, "______________________________")
-		spreadingDesease(&network, simulationEpochs, &epochsResults, muskPointer, socialDistancingPointer, ssnPointer)
+		spreadingDesease(&network, simulationEpochs, &epochsResults, muskPointer, socialDistancingPointer, ssnPointer, &trialsResults, i)
 		log.Println("clear graph network...")
 		resetNetwork(&network)
 		if *computeCI {
@@ -226,6 +226,36 @@ func main() {
 		// CI: MORTI TOTALI
 		// CI: GUARITI TOTALI
 
+	}
+
+	if *computeCI {
+		log.Println("Save for compute CI on csv...")
+
+		csvFile, err := os.Create(folderName + "/simulation_trials_results.csv")
+
+		if err != nil {
+			log.Fatalf("failed creating file: %s", err)
+		}
+
+		csvwriter := csv.NewWriter(csvFile)
+
+		for _, trial := range trialsResults {
+			// convert row of []int into []string
+			var row [len(trial)]string
+			for i := 0; i < len(trial); i++ {
+				row[i] = strconv.Itoa(trial[i])
+			}
+			err = csvwriter.Write(row[:])
+
+			if err != nil {
+				log.Println("ERROR ON CREATING CSV:", err)
+			}
+		}
+
+		csvwriter.Flush()
+		csvFile.Close()
+
+		log.Println("Saved for compute CI and closed csv.")
 	}
 
 	log.Println("Save results on csv...")
