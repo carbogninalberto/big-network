@@ -288,6 +288,18 @@ func main() {
 
 	// call python script *working*
 	if *runPyScript {
+		if *computeCI {
+			log.Println("Calling python CI script...")
+			// TODO: add flags for path execution
+			out, err := exec.Command("python", "./Scripts/plotgraphs.py").Output()
+
+			if err != nil {
+				log.Panicln("ERROR ON EXECUTING PYTHON SCRIPT", err)
+			}
+
+			log.Println("Output:\n---\n\n", string(out), "\n----")
+
+		}
 		log.Println("Calling Python script...")
 
 		out, err := exec.Command("python", "./Scripts/plotgraphs.py").Output()
