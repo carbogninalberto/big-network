@@ -23,7 +23,7 @@ type bigNet []person
 // Hyperparameters configuration of Simulation
 const (
 	ISDEBUG             = false
-	nNodes              = 4905  //85 //4 // 4905854 number of people in Veneto
+	nNodes              = 4905  //8 //5 //4 // 4905854 number of people in Veneto
 	nEdges              = 150   //Dunbar number 150
 	bedIntensiveCare    = 450   //https://www.aulss2.veneto.it/amministrazione-trasparente/disposizioni-generali/atti-generali/regolamenti?p_p_id=101&p_p_lifecycle=0&p_p_state=maximized&p_p_col_id=column-1&p_p_col_pos=22&p_p_col_count=24&_101_struts_action=%2Fasset_publisher%2Fview_content&_101_assetEntryId=10434368&_101_type=document
 	bedSubIntensiveCare = 12000 //number of beds
@@ -33,7 +33,7 @@ const (
 	medianR0            = 5     //2.28  //https://pubmed.ncbi.nlm.nih.gov/32097725/ 2.06-2.52 95% CI 0,22/1.96 = 0.112
 	stdR0               = 0.8   //0.112
 	infectiveEpochs     = 14
-	simulationEpochs    = 30
+	simulationEpochs    = 90 //DURATION OF SIMULATION
 	deadRate            = 0.054
 	muskEpoch           = -1   //30   //starting epoch of musk set -1 to disable
 	muskProb            = 0.95 //prevention probability
@@ -218,14 +218,11 @@ func main() {
 		spreadingDesease(&network, simulationEpochs, &epochsResults, muskPointer, socialDistancingPointer, ssnPointer, &trialsResults, i)
 		log.Println("clear graph network...")
 		resetNetwork(&network)
-		if *computeCI {
-
+		// reset national healthcare system
+		ssnPointer = &nationalHealthcareSystem{
+			intensiveCare:    bedIntensiveCare,
+			subIntensiveCare: bedSubIntensiveCare,
 		}
-		// compute CI ecc
-		// CI: INFETTI TOTALI
-		// CI: MORTI TOTALI
-		// CI: GUARITI TOTALI
-
 	}
 
 	if *computeCI {
@@ -290,7 +287,22 @@ func main() {
 	if *runPyScript {
 		if *computeCI {
 			log.Println("Calling python CI script...")
-			// TODO: add flags for path execution
+
+			pathOfData := "--path=" + folderName + "/simulation_trials_results.csv"
+
+			out, err := exec.Command("python", "./Scripts/plotgraphs.py", pathOfData).Output()
+
+			if err != nil {
+				log.Println(string(out))
+				log.Panicln("ERROR ON EXECUTING PYTHON SCRIPT", err)
+			}
+
+			log.Println("Output:\n---\n\n", string(out), "\n----")
+
+		}
+		/*
+			log.Println("Calling Python script...")
+
 			out, err := exec.Command("python", "./Scripts/plotgraphs.py").Output()
 
 			if err != nil {
@@ -298,17 +310,7 @@ func main() {
 			}
 
 			log.Println("Output:\n---\n\n", string(out), "\n----")
-
-		}
-		log.Println("Calling Python script...")
-
-		out, err := exec.Command("python", "./Scripts/plotgraphs.py").Output()
-
-		if err != nil {
-			log.Panicln("ERROR ON EXECUTING PYTHON SCRIPT", err)
-		}
-
-		log.Println("Output:\n---\n\n", string(out), "\n----")
+		*/
 	} else {
 		log.Println("<Skip calling python script>")
 	}

@@ -134,16 +134,16 @@ func spreadingDesease(networkPointer *bigNet, epochs int, epochsResultsPointer *
 
 		// number of total infected
 		(*epochsResultsPointer)[epoch][2] = countTotalInfected(networkPointer)
-		// number of total survived
+		// number of total recovered
 		(*epochsResultsPointer)[epoch][3] = countInfected(networkPointer, false, true, false)
-		// number of total dead
+		// number of total deaths
 		(*epochsResultsPointer)[epoch][4] = countInfected(networkPointer, false, false, true)
 
 		// assign number of total infected to col 0 of trial
 		(*trialsResultsPointer)[trial][0] += (*epochsResultsPointer)[epoch][2]
-		// assign number of total survived to col 1 of trial
+		// assign number of total recovered to col 1 of trial
 		(*trialsResultsPointer)[trial][1] += (*epochsResultsPointer)[epoch][3]
-		// assign number of total dead to col 2 of trial
+		// assign number of total deaths to col 2 of trial
 		(*trialsResultsPointer)[trial][2] += (*epochsResultsPointer)[epoch][4]
 
 		runtime.GC()

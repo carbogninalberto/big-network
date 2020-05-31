@@ -1,4 +1,17 @@
 import pandas as pd
+import argparse
+import math
+import random
+import scipy.stats as st
+
+
+#---------------------------------------------------
+# Settings
+#---------------------------------------------------
+
+METRIC = {'median': 'computeMedian', 'mean':'computeMean', 'gap': 'computeGap', 'jain': 'computeJFI', 'stddev': 'computeStdDev', 'variance':'computeVar', 'log_mean':'computeLogMean', 'bernoulli':'bernoulliRVBS'}
+
+#---------------------------------------------------
 
 def loadCSV(csv_file): #TODO: Remember to modify it according to data of exercise 2
     dataset = pd.read_csv(csv_file, header=None) #here we are working with Pandas DataFrame
@@ -30,6 +43,15 @@ def getCIMean(data, ci_value):
 
     return start_int, end_int
 
+def computeStdDev(x):
+    mean = computeMean(x)
+    sum_squares = 0
+    n = len(x)
+    for i in range(0,n):
+        sum_squares += pow((x[i] - mean), 2)
+    std_dev = math.sqrt(sum_squares / (n - 1))
+    return std_dev
+
 def computeMean(x):
     sum_x = 0
     n = len(x)
@@ -47,16 +69,84 @@ def computeStdDev(x):
     std_dev = math.sqrt(sum_squares / (n - 1))
     return std_dev
 
+def computeEta(ci_value, data, distribution):
+    if distribution == 't':
+        eta = st.t.ppf((1 + ci_value) / 2, len(data) - 1)
+    elif distribution == 'normal':
+        eta = st.norm.ppf((1 + ci_value) / 2)
+    return eta
+
+def bootstrapAlgorithm(dataset, accuracy=25, ci_level=0.95, metric='mean'):
+    ds_length = len(dataset)
+    samples_metric = []
+
+    samples_metric.append(globals()[METRIC[metric]](dataset))
+    R = math.ceil(2 * (accuracy / (1-ci_level))) - 1
+
+    for r in range(R):
+        tmp_dataset = []
+        for i in range(ds_length):
+            tmp_dataset.append(dataset[random.randrange(0, ds_length, 1)])
+        samples_metric.append(globals()[METRIC[metric]](tmp_dataset)) # load the desired metric function
+
+    samples_metric.sort()
+    #print('sample_metric_len:', len(samples_metric), 'range len:', len(samples_metric[accuracy:(R+1-accuracy)]))
+    return samples_metric[accuracy:(R+1-accuracy)]
 
 if __name__ == "__main__":
-    print("\nAnalysis 1")
-    
-    # TODO: load right path with flag
-    data = loadCSV("data_hw1/data_ex1.csv")
+    # Define the parser
+    parser = argparse.ArgumentParser(description="Analyze the result data of the spreading disease")
+    # Define the flag --path with default value file.csv
+    parser.add_argument('--path', action='store', dest='path', default='file.csv')
+    # parse values
+    args = parser.parse_args()
 
-    mean = computeMean(data)
-    print("\tThe Mean is", mean)
-    start_ci_mean_95, end_ci_mean_95 = getCIMean(data, 0.95)
-    start_ci_mean_99, end_ci_mean_99 = getCIMean(data, 0.99)
-    print("\t\tThe 95% CI for the Mean is [", start_ci_mean_95, ",", end_ci_mean_95, "]")
-    print("\t\tThe 99% CI for the Mean is [", start_ci_mean_99, ",", end_ci_mean_99, "]")
+    print("\nAnalysis 1")
+    #--path=1591000816817596400/simulation_trials_results.csv
+    #data = loadCSV(args.path)
+    data = pd.read_csv(args.path, header=None)
+
+    # Total Infected Population
+    print("\nTOTAL INFECTED")
+    total_infected = data.iloc[:, 0]
+    total_infected_mean = computeMean(total_infected)
+    print("\n\tThe Mean of Total Infected is", total_infected_mean)
+    total_infected_start_ci_mean_95, total_infected_end_ci_mean_95 = getCIMean(total_infected, 0.95)
+    total_infected_start_ci_mean_99, total_infected_end_ci_mean_99 = getCIMean(total_infected, 0.99)
+    print("\t1. Confidence Intervals using Asymptotic Formulas")
+    print("\t\tThe 95% CI for the Mean of Total Infected is [", total_infected_start_ci_mean_95, ",", total_infected_end_ci_mean_95, "]")
+    print("\t\tThe 99% CI for the Mean of Total Infected is [", total_infected_start_ci_mean_99, ",", total_infected_end_ci_mean_99, "]")
+    total_infected_bs_95 = bootstrapAlgorithm(dataset=total_infected)
+    print("\t2. Confidence Intervals using Bootstrap Algorithm")
+    print('\t\tThe 95% CI for Mean of Total Infected is [{}, {}]'.format(total_infected_bs_95[0], total_infected_bs_95[len(total_infected_bs_95)-1]))
+
+    # Total Recovered
+    print("\nTOTAL RECOVERED")
+    total_recovered = data.iloc[:, 1]
+    total_recovered_mean = computeMean(total_recovered)
+    print("\n\tThe Mean of Total Recovered is", total_recovered_mean)
+    total_recovered_start_ci_mean_95, total_recovered_end_ci_mean_95 = getCIMean(total_recovered, 0.95)
+    total_recovered_start_ci_mean_99, total_recovered_end_ci_mean_99 = getCIMean(total_recovered, 0.99)
+    print("\t1. Confidence Intervals using Asymptotic Formulas")
+    print("\t\tThe 95% CI for the Mean of Total Recovered is [", total_recovered_start_ci_mean_95, ",", total_recovered_end_ci_mean_95, "]")
+    print("\t\tThe 99% CI for the Mean of Total Recovered is [", total_recovered_start_ci_mean_99, ",", total_recovered_end_ci_mean_99, "]")
+    total_recovered_bs_95 = bootstrapAlgorithm(dataset=total_recovered)
+    print("\t2. Confidence Intervals using Bootstrap Algorithm")
+    print('\t\tThe 95% CI for Mean of Total Recovered is [{}, {}]'.format(total_recovered_bs_95[0], total_recovered_bs_95[len(total_recovered_bs_95)-1]))
+    
+    # Total Deaths
+    print("\nTOTAL DEATHS")
+    total_deaths = data.iloc[:, 2]
+    total_deaths_mean = computeMean(total_deaths)
+    print("\n\tThe Mean of Total Deaths is", total_deaths_mean)
+    total_deaths_start_ci_mean_95, total_deaths_end_ci_mean_95 = getCIMean(total_deaths, 0.95)
+    total_deaths_start_ci_mean_99, total_deaths_end_ci_mean_99 = getCIMean(total_deaths, 0.99)
+    print("\t1. Confidence Intervals using Asymptotic Formulas")
+    print("\t\tThe 95% CI for the Mean of Total Deaths is [", total_deaths_start_ci_mean_95, ",", total_deaths_end_ci_mean_95, "]")
+    print("\t\tThe 99% CI for the Mean of Total Deaths is [", total_deaths_start_ci_mean_99, ",", total_deaths_end_ci_mean_99, "]")
+    total_deaths_bs_95 = bootstrapAlgorithm(dataset=total_deaths)
+    print("\t2. Confidence Intervals using Bootstrap Algorithm")
+    print('\t\tThe 95% CI for Mean of Total Deaths is [{}, {}]'.format(total_deaths_bs_95[0], total_deaths_bs_95[len(total_deaths_bs_95)-1]))
+    
+
+
