@@ -20,13 +20,17 @@ import (
 
 type bigNet []person
 
+// In Veneto public healthcare beds are 3.3 per 1000 or in total 16.201
+// plus 1503 of private healthcare beds or 0.3 per 1000
+// http://www.salute.gov.it/imgs/C_17_pubblicazioni_2859_allegato.pdf page 58 of document (71 of pdf)
+
 // Hyperparameters configuration of Simulation
 const (
 	ISDEBUG             = false
 	nNodes              = 4905  //8 //5 //4 // 4905854 number of people in Veneto
 	nEdges              = 150   //Dunbar number 150
 	bedIntensiveCare    = 450   //https://www.aulss2.veneto.it/amministrazione-trasparente/disposizioni-generali/atti-generali/regolamenti?p_p_id=101&p_p_lifecycle=0&p_p_state=maximized&p_p_col_id=column-1&p_p_col_pos=22&p_p_col_count=24&_101_struts_action=%2Fasset_publisher%2Fview_content&_101_assetEntryId=10434368&_101_type=document
-	bedSubIntensiveCare = 12000 //number of beds
+	bedSubIntensiveCare = 16201 //number of beds
 	pIntensiveCare      = 0.02  //probability of requiring intensive Care
 	pSubIntensiveCare   = 0.15  //probability of requiring sub intensive care
 	hospitalDays        = 7     //the number of day to add to the duration of the disease
