@@ -15,7 +15,7 @@ type nationalHealthcareSystem struct {
 }
 
 // spreadingDesease runs a simulation over n epochs on a bigNet ([]person)
-func spreadingDesease(networkPointer *bigNet, epochs int, epochsResultsPointer *[simulationEpochs][5]int, muskPointer *muskMeasure, socialDistancePointer *socialDistancingMeasure, ssnPointer *nationalHealthcareSystem, trialsResultsPointer *[][3]int, trial int) error {
+func spreadingDesease(networkPointer *bigNet, epochs int, epochsResultsPointer *[simulationEpochs][5]int, muskPointer *muskMeasure, socialDistancePointer *socialDistancingMeasure, ssnPointer *nationalHealthcareSystem, trialsResultsPointer *[][3]int, ssnEpochResults *[simulationEpochs][2]int, trial int) error {
 	for epoch := 0; epoch < epochs; epoch++ {
 
 		if epoch == 0 {
@@ -139,14 +139,20 @@ func spreadingDesease(networkPointer *bigNet, epochs int, epochsResultsPointer *
 		// number of total deaths
 		(*epochsResultsPointer)[epoch][4] = countInfected(networkPointer, false, false, true)
 
-		// assign number of total infected to col 0 of trial
-		(*trialsResultsPointer)[trial][0] += (*epochsResultsPointer)[epoch][2]
-		// assign number of total recovered to col 1 of trial
-		(*trialsResultsPointer)[trial][1] += (*epochsResultsPointer)[epoch][3]
-		// assign number of total deaths to col 2 of trial
-		(*trialsResultsPointer)[trial][2] += (*epochsResultsPointer)[epoch][4]
+		// number of intensive care
+		(*ssnEpochResults)[epoch][0] = len((*ssnPointer).intensiveCareHospitalization)
+		// number of sub intensive care
+		(*ssnEpochResults)[epoch][1] = len((*ssnPointer).subIntensiveCareHospitalization)
 
 		runtime.GC()
 	}
+
+	// assign number of total infected to col 0 of trial
+	(*trialsResultsPointer)[trial][0] = countTotalInfected(networkPointer)
+	// assign number of total recovered to col 1 of trial
+	(*trialsResultsPointer)[trial][1] = countInfected(networkPointer, false, true, false)
+	// assign number of total deaths to col 2 of trial
+	(*trialsResultsPointer)[trial][2] = countInfected(networkPointer, false, false, true)
+
 	return nil
 }

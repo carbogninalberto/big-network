@@ -27,7 +27,7 @@ type bigNet []person
 // Hyperparameters configuration of Simulation
 const (
 	ISDEBUG             = false
-	nNodes              = 4905  //8 //5 //4 // 4905854 number of people in Veneto
+	nNodes              = 49058 //5 //4 // 4905854 number of people in Veneto
 	nEdges              = 150   //Dunbar number 150
 	bedIntensiveCare    = 450   //https://www.aulss2.veneto.it/amministrazione-trasparente/disposizioni-generali/atti-generali/regolamenti?p_p_id=101&p_p_lifecycle=0&p_p_state=maximized&p_p_col_id=column-1&p_p_col_pos=22&p_p_col_count=24&_101_struts_action=%2Fasset_publisher%2Fview_content&_101_assetEntryId=10434368&_101_type=document
 	bedSubIntensiveCare = 16201 //number of beds
@@ -37,7 +37,7 @@ const (
 	medianR0            = 5     //2.28  //https://pubmed.ncbi.nlm.nih.gov/32097725/ 2.06-2.52 95% CI 0,22/1.96 = 0.112
 	stdR0               = 0.8   //0.112
 	infectiveEpochs     = 14
-	simulationEpochs    = 90 //DURATION OF SIMULATION
+	simulationEpochs    = 120 //DURATION OF SIMULATION
 	deadRate            = 0.054
 	muskEpoch           = -1   //30   //starting epoch of musk set -1 to disable
 	muskProb            = 0.95 //prevention probability
@@ -64,6 +64,7 @@ func main() {
 	fileNetwork := flag.String("namenet", "Network.json", "default value is Network.json, it's the name of the network file")
 	mctrials := flag.Int("mctrials", 1, "default value is 1, you can choose how many trials run on the Montecarlo Simulation")
 	computeCI := flag.Bool("computeCI", false, "default value is false, set to true when use flag -mctrials > 1 to get Confidence Intervals of metrics")
+	computeSSN := flag.Bool("computeSSN", false, "default value is false, set to true to get information about national healthcare system")
 	runPyScript := flag.Bool("runpyscript", false, "default valuse is false, set to true if you want to print graphs of simulation with matplotlib")
 	flag.Parse()
 
@@ -74,6 +75,7 @@ func main() {
 	network := make(bigNet, nNodes)
 	var epochsResults [simulationEpochs][5]int
 	var trialsResults = make([][3]int, *mctrials)
+	var ssnEpochsResults [simulationEpochs][2]int
 	// creating run folder
 	folderName := strconv.Itoa(int(time.Now().UnixNano()))
 	os.MkdirAll(folderName, os.ModePerm)
@@ -219,7 +221,7 @@ func main() {
 	// Montecarlo Simulation
 	for i := 0; i < *mctrials; i++ {
 		log.Println("TRIAL:\t", i, "______________________________")
-		spreadingDesease(&network, simulationEpochs, &epochsResults, muskPointer, socialDistancingPointer, ssnPointer, &trialsResults, i)
+		spreadingDesease(&network, simulationEpochs, &epochsResults, muskPointer, socialDistancingPointer, ssnPointer, &trialsResults, &ssnEpochsResults, i)
 		log.Println("clear graph network...")
 		resetNetwork(&network)
 		// reset national healthcare system
@@ -259,6 +261,36 @@ func main() {
 		log.Println("Saved for compute CI and closed csv.")
 	}
 
+	if *computeSSN {
+		log.Println("Save for compute SSN on csv...")
+
+		csvFile, err := os.Create(folderName + "/simulation_ssn_results.csv")
+
+		if err != nil {
+			log.Fatalf("failed creating file: %s", err)
+		}
+
+		csvwriter := csv.NewWriter(csvFile)
+
+		for _, epoch := range ssnEpochsResults {
+			// convert row of []int into []string
+			var row [len(epoch)]string
+			for i := 0; i < len(epoch); i++ {
+				row[i] = strconv.Itoa(epoch[i])
+			}
+			err = csvwriter.Write(row[:])
+
+			if err != nil {
+				log.Println("ERROR ON CREATING CSV:", err)
+			}
+		}
+
+		csvwriter.Flush()
+		csvFile.Close()
+
+		log.Println("Saved for compute SSN and closed csv.")
+	}
+
 	log.Println("Save results on csv...")
 
 	csvFile, err := os.Create(folderName + "/simulation.csv")
@@ -289,12 +321,14 @@ func main() {
 
 	// call python script *working*
 	if *runPyScript {
-		if *computeCI {
+		if *computeCI && *computeSSN {
 			log.Println("Calling python CI script...")
 
-			pathOfData := "--path=" + folderName + "/simulation_trials_results.csv"
+			pathOfData := "--trialsFile=simulation_trials_results.csv"
+			pathOfFolder := "--folder=" + folderName + "/"
+			plotSSN := "--ssnFile=simulation_ssn_results.csv"
 
-			out, err := exec.Command("python", "./Scripts/plotgraphs.py", pathOfData).Output()
+			out, err := exec.Command("python", "./Scripts/plotgraphs.py", pathOfData, pathOfFolder, plotSSN).Output()
 
 			if err != nil {
 				log.Println(string(out))
@@ -305,15 +339,32 @@ func main() {
 
 		}
 		/*
-			log.Println("Calling Python script...")
+			if *computeSSN {
+				log.Println("Calling python SSN script...")
 
-			out, err := exec.Command("python", "./Scripts/plotgraphs.py").Output()
+				pathOfData := "--trialsFile=simulation_trials_results.csv"
+				pathOfFolder := "--folder=" + folderName + "/"
+				plotSSN := "--ssnFile=simulation_ssn_results.csv"
 
-			if err != nil {
-				log.Panicln("ERROR ON EXECUTING PYTHON SCRIPT", err)
+				out, err := exec.Command("python", "./Scripts/plotgraphs.py", pathOfData, pathOfFolder, plotSSN).Output()
+
+				if err != nil {
+					log.Println(string(out))
+					log.Panicln("ERROR ON EXECUTING PYTHON SCRIPT", err)
+				}
+
+				log.Println("Output:\n---\n\n", string(out), "\n----")
 			}
 
-			log.Println("Output:\n---\n\n", string(out), "\n----")
+				log.Println("Calling Python script...")
+
+				out, err := exec.Command("python", "./Scripts/plotgraphs.py").Output()
+
+				if err != nil {
+					log.Panicln("ERROR ON EXECUTING PYTHON SCRIPT", err)
+				}
+
+				log.Println("Output:\n---\n\n", string(out), "\n----")
 		*/
 	} else {
 		log.Println("<Skip calling python script>")

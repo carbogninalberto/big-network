@@ -48,10 +48,22 @@ and if you want also to compute the CI over all the three metrics [Total Cases, 
 go run . -loadnet=true -mctrials=100 -computeCI=true
 ```
 
-alternatively, you can run a simulation computing CI on python script, allocating a random net, and performing 100 trials by running
+alternatively, you can run a simulation computing CI on python script, allocating a random net, and performing 100 trials by running:
 
 ```
 go run . --computeCI=true --mctrials=100 --runpyscript=true
+```
+
+Finally, to get information about national healthcare system, metrics and disease spreding with 20 trials run:
+
+```
+go run . --computeCI=true --mctrials=20 --runpyscript=true --computeSSN=true
+```
+
+In Scripts folder you can find the python script to elaborate graphs, you can also run the simulation and only after produce graphs by calling the python script as for example with a timestamp of 1591033168543190400:
+
+```
+python .\Scripts\plotgraphs.py --trialsFile=simulation_trials_results.csv --folder=1591033168543190400/ --ssnFile=simulation_ssn_results.csv
 ```
 
 ## List of available flags
