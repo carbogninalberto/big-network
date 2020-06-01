@@ -3,7 +3,9 @@ import argparse
 import math
 import random
 import scipy.stats as st
-
+import matplotlib.pyplot as plt
+import numpy as np
+from matplotlib.ticker import FuncFormatter
 
 #---------------------------------------------------
 # Settings
@@ -13,7 +15,7 @@ METRIC = {'median': 'computeMedian', 'mean':'computeMean', 'gap': 'computeGap', 
 
 #---------------------------------------------------
 
-def loadCSV(csv_file): #TODO: Remember to modify it according to data of exercise 2
+def loadCSV(csv_file): 
     dataset = pd.read_csv(csv_file, header=None) #here we are working with Pandas DataFrame
     #print(dataset.shape)
 
@@ -96,15 +98,19 @@ def bootstrapAlgorithm(dataset, accuracy=25, ci_level=0.95, metric='mean'):
 if __name__ == "__main__":
     # Define the parser
     parser = argparse.ArgumentParser(description="Analyze the result data of the spreading disease")
-    # Define the flag --path with default value file.csv
-    parser.add_argument('--path', action='store', dest='path', default='file.csv')
+    # Define the flag --trials with default value file.csv
+    parser.add_argument('--trialsFile', action='store', dest='trialsFile', default='file.csv')
+     # Define the flag --ssn with default value empty
+    parser.add_argument('--ssnFile', action='store', dest='ssnFile', default='')
+     # Define the flag --simulation with default value simulation.csv
+    parser.add_argument('--simulationFile', action='store', dest='simulationFile', default='simulation.csv')
+    # Define the flag --folder with default value of graphs
+    parser.add_argument('--folder', action='store', dest='folder', default='graphs/')
     # parse values
     args = parser.parse_args()
 
     print("\nAnalysis 1")
-    #--path=1591000816817596400/simulation_trials_results.csv
-    #data = loadCSV(args.path)
-    data = pd.read_csv(args.path, header=None)
+    data = pd.read_csv(args.folder+args.trialsFile, header=None)
 
     # Total Infected Population
     print("\nTOTAL INFECTED")
@@ -147,6 +153,110 @@ if __name__ == "__main__":
     total_deaths_bs_95 = bootstrapAlgorithm(dataset=total_deaths)
     print("\t2. Confidence Intervals using Bootstrap Algorithm")
     print('\t\tThe 95% CI for Mean of Total Deaths is [{}, {}]'.format(total_deaths_bs_95[0], total_deaths_bs_95[len(total_deaths_bs_95)-1]))
+
+    metrics = ["Total \nInfected \nAsymptotic", "Total \nRecovered \nAsymptotic", "Total \nDeaths \nAsymptotic"]
+    mean_values = [total_infected_mean, total_recovered_mean, total_deaths_mean]
+    error_values = [total_infected_mean-total_infected_start_ci_mean_95, total_recovered_mean-total_recovered_start_ci_mean_95, total_deaths_mean-total_deaths_start_ci_mean_95]
     
+    metrics_bs = ["Total \nInfected \nBootstrap", "Total \nRecovered \nBootstrap", "Total \nDeaths \nBootstrap"]
+    error_values_bs = [total_infected_mean-total_infected_bs_95[0], total_recovered_mean-total_recovered_bs_95[0], total_deaths_mean-total_deaths_bs_95[0]]
+
+    mean_values[:] = [ x / 1000 for x in mean_values] #in thousands
+    error_values[:] = [ x / 1000 for x in error_values] #in thousands
+    error_values_bs[:] = [ x / 1000 for x in error_values_bs] #in thousands
+
+    # image settings
+    my_dpi = 92 # setting my dpi
+    plt.figure(figsize=(650/my_dpi, 650/my_dpi), dpi=my_dpi)
+
+    #plt.subplot(1, 1, 1)
+    plt.title('Confidence Intervals of Total Infected with 2 techniques')
+    plt.errorbar([metrics[0], metrics_bs[0]], [mean_values[0], mean_values[0]], yerr=[error_values[0], error_values_bs[0]], linestyle='None', marker='.', lw=1, fmt='.k', capsize=3, fillstyle='full')
+    plt.ylabel("Value/1000")
+    plt.xlabel("Total Infected")
+    plt.savefig(args.folder+"results_total_infected.png", dpi=my_dpi*3)
+    plt.clf()
+
+    #plt.subplot(3, 1, 2)
+    plt.title('Confidence Intervals of Total Recovered with 2 techniques')
+    plt.errorbar([metrics[1], metrics_bs[1]], [mean_values[1], mean_values[1]], yerr=[error_values[1], error_values_bs[1]], linestyle='None', marker='.', lw=1, fmt='.k', capsize=3)
+    plt.ylabel("Value/1000")
+    plt.xlabel("Total Recovered")
+    plt.savefig(args.folder+"results_total_recovered.png", dpi=my_dpi*3)
+    plt.clf()
+
+    #plt.subplot(3, 1, 3)
+    plt.title('Confidence Intervals of Total Deaths with 2 techniques')
+    plt.errorbar([metrics[2], metrics_bs[2]], [mean_values[2], mean_values[2]], yerr=[error_values[2], error_values_bs[2]], linestyle='None', marker='.', lw=1, fmt='.k', capsize=3)
+    plt.ylabel("Value/1000")
+    plt.xlabel("Total Deaths")
+    plt.savefig(args.folder+"results_total_deaths.png", dpi=my_dpi*3)
+    plt.clf()
+    
+    #plt.show()
+
+    x = np.arange(3)
+    only_metrics = ("Total \nInfected", "Total \nRecovered", "Total \nDeaths")
+
+    def millions(x, pos):
+        'The two args are the value and tick position'
+        return x 
 
 
+    formatter = FuncFormatter(millions)
+
+    fig, ax = plt.subplots()
+    #ax.yaxis.set_major_formatter(formatter)
+    plt.title("Metrics Results Averages")
+    plt.bar(only_metrics, mean_values)
+    plt.xticks(x, only_metrics)
+    plt.savefig(args.folder+"results_.png", dpi=my_dpi*3)
+    plt.clf()
+    #plt.show()
+
+
+    # ANALYSIS 2
+
+    simulationData = pd.read_csv(args.folder+args.simulationFile, header=None)
+
+    # generate x for number of epochs
+    t = np.arange(0, len(simulationData), 1)
+    active_infected = simulationData.iloc[:, 0]
+
+    fig, ax = plt.subplots()
+    ax.plot(t, active_infected, label="Active Infected")
+
+    ax.set(xlabel='epochs (day)', ylabel='number of people',
+        title='Spreading of the disease')
+    ax.grid()
+    
+    plt.legend()
+
+    fig.savefig(args.folder+"results_epidemic.png", dpi=my_dpi*3)
+    plt.clf()
+
+    if args.ssnFile != '':
+        # Data for plotting
+        ssnData = pd.read_csv(args.folder+args.ssnFile, header=None)
+
+        # generate x for number of epochs
+        t = np.arange(0, len(ssnData), 1)
+        intensiveCare = ssnData.iloc[:, 0]
+        subIntensiveCare = ssnData.iloc[:, 1]
+
+        fig, ax = plt.subplots()
+        ax.plot(t, intensiveCare, label="Intensive Beds")
+        ax.plot(t, subIntensiveCare, label="Other Beds")
+
+        ax.set(xlabel='epochs (day)', ylabel='number of people',
+            title='National Healthcare Systems usage because of epidemic')
+        ax.grid()
+
+        plt.legend()
+
+        fig.savefig(args.folder+"results_ssn_epidemic.png", dpi=my_dpi*3)
+        plt.clf()
+
+
+
+    
