@@ -42,10 +42,16 @@ If you want to run a Montecarlo Simulation you chan choose how many trials to ru
 go run . -loadnet=true -mctrials=100
 ```
 
-and if you want also to compute the CI over all the three metrics [Total Cases, Healed, Dead]:
+and if you want also to compute the CI over all the three metrics [Total Cases, Recovered, Deaths]:
 
 ```
 go run . -loadnet=true -mctrials=100 -computeCI=true
+```
+
+alternatively, you can run a simulation computing CI on python script, allocating a random net, and performing 100 trials by running
+
+```
+go run . --computeCI=true --mctrials=100 --runpyscript=true
 ```
 
 ## List of available flags
@@ -81,6 +87,6 @@ The exported .csv files header is the following:
 - [X] Create a Big Network Graph of the Population
 - [X] Gather Information about Italian Hospitals
 - [X] Gather Information about different viruses
-- [ ] Coding the core-project  (**work in progress**)
-- [ ] Montecarlo Simulation and CI
+- [X] Coding the core-project  (**work in progress**)
+- [X] Montecarlo Simulation and CI
 - [ ] Final Report (**work in progress**)
