@@ -34,15 +34,15 @@ const (
 	pIntensiveCare      = 0.02   //probability of requiring intensive Care
 	pSubIntensiveCare   = 0.15   //probability of requiring sub intensive care
 	hospitalDays        = 7      //the number of day to add to the duration of the disease
-	medianR0            = 5      //2.28  //https://pubmed.ncbi.nlm.nih.gov/32097725/ 2.06-2.52 95% CI 0,22/1.96 = 0.112
-	stdR0               = 0.8    //0.112
-	infectiveEpochs     = 14
-	simulationEpochs    = 150 //DURATION OF SIMULATION
-	deadRate            = 0.054
-	muskEpoch           = -1   //30   //starting epoch of musk set -1 to disable
-	muskProb            = 0.20 //95 //prevention probability
+	medianR0            = 2.1    //2.28  //https://pubmed.ncbi.nlm.nih.gov/32097725/ 2.06-2.52 95% CI 0,22/1.96 = 0.112
+	stdR0               = 0.7    //0.112
+	infectiveEpochs     = 3
+	simulationEpochs    = 180 //DURATION OF SIMULATION
+	deadRate            = 0.025
+	muskEpoch           = 30   //30   //starting epoch of musk set -1 to disable
+	muskProb            = 0.05 //95 //prevention probability
 	socDisEpoch         = -1   //40	//starting epoch of social distacing set -1 to disable
-	incubationEpochs    = 0    //number of epochs in incubation
+	incubationEpochs    = 1    //number of epochs in incubation
 )
 
 type person struct {
@@ -214,8 +214,8 @@ func main() {
 		FromEpoch: socDisEpoch,
 		AllowContacts: map[string]bool{
 			"P": true,
-			"A": false,
-			"C": true,
+			"A": true,
+			"C": false,
 			"O": false,
 		},
 	}
