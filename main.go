@@ -37,12 +37,12 @@ const (
 	medianR0            = 2.1    //2.28  //https://pubmed.ncbi.nlm.nih.gov/32097725/ 2.06-2.52 95% CI 0,22/1.96 = 0.112
 	stdR0               = 0.7    //0.112
 	infectiveEpochs     = 3
-	simulationEpochs    = 180 //DURATION OF SIMULATION
+	simulationEpochs    = 200 //DURATION OF SIMULATION
 	deadRate            = 0.025
-	muskEpoch           = 30   //30   //starting epoch of musk set -1 to disable
-	muskProb            = 0.05 //95 //prevention probability
-	socDisEpoch         = -1   //40	//starting epoch of social distacing set -1 to disable
-	incubationEpochs    = 1    //number of epochs in incubation
+	//muskEpoch           = 30   //30   //starting epoch of musk set -1 to disable
+	//muskProb            = 0.05 //95 //prevention probability
+	//socDisEpoch         = -1   //40	//starting epoch of social distacing set -1 to disable
+	incubationEpochs = 1 //number of epochs in incubation
 )
 
 type person struct {
@@ -67,6 +67,9 @@ func main() {
 	computeSSN := flag.Bool("computeSSN", false, "default value is false, set to true to get information about national healthcare system")
 	runPyScript := flag.Bool("runpyscript", false, "default valuse is false, set to true if you want to print graphs of simulation with matplotlib")
 	folderFlag := flag.String("folder", "", "default value is '', set the name of the folder to generate")
+	muskEpoch := flag.Int("muskEpoch", 1, "default value is -1, number of epochs before applying measure")
+	muskProb := flag.Float64("muskProb", 0.2, "default value is 0.2, musk policy efficency")
+	socDisEpoch := flag.Int("socDisEpoch", 1, "default value is -1, number of epochs before applying measure")
 	flag.Parse()
 
 	// random seed
@@ -206,12 +209,12 @@ func main() {
 	// Allocating Policy Measure
 	muskPointer := &muskMeasure{
 		Active:    true,
-		FromEpoch: muskEpoch,
-		Psucc:     muskProb,
+		FromEpoch: *muskEpoch,
+		Psucc:     *muskProb,
 	}
 	socialDistancingPointer := &socialDistancingMeasure{
 		Active:    true,
-		FromEpoch: socDisEpoch,
+		FromEpoch: *socDisEpoch,
 		AllowContacts: map[string]bool{
 			"P": true,
 			"A": true,
