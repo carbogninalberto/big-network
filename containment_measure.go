@@ -28,7 +28,7 @@ func middlewareContainmentMeasure(personPointer *person, muskPointer *muskMeasur
 	// generati a valid ID regarding socialDistancingMeasure if Active
 	if (*socialDistancePointer).Active && epoch >= (*socialDistancePointer).FromEpoch && (*socialDistancePointer).FromEpoch != -1 {
 		infected, infectedID := generateRandomId(personPointer, &(*socialDistancePointer).AllowContacts)
-		if infected && (*muskPointer).Active {
+		if infected && (*muskPointer).Active && epoch >= (*muskPointer).FromEpoch && (*muskPointer).FromEpoch != -1 {
 			prevent := bernoulli((*muskPointer).Psucc)
 			if ISDEBUG {
 				log.Println("SOCIAL DISTACING + MUSK POLICY", !prevent, infectedID)
@@ -43,7 +43,8 @@ func middlewareContainmentMeasure(personPointer *person, muskPointer *muskMeasur
 		return infected, infectedID
 	} else if (*muskPointer).Active && epoch >= (*muskPointer).FromEpoch && (*muskPointer).FromEpoch != -1 {
 		// go into this branch only if musk policy
-		infectedID := rand.Intn(len((*personPointer).Edges))
+		randomInfect := rand.Intn(len((*personPointer).Edges))
+		infectedID := int((*personPointer).Edges[randomInfect])
 		prevent := bernoulli((*muskPointer).Psucc)
 
 		if ISDEBUG {
