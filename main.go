@@ -348,34 +348,7 @@ func main() {
 			log.Println("Output:\n---\n\n", string(out), "\n----")
 
 		}
-		/*
-			if *computeSSN {
-				log.Println("Calling python SSN script...")
 
-				pathOfData := "--trialsFile=simulation_trials_results.csv"
-				pathOfFolder := "--folder=" + folderName + "/"
-				plotSSN := "--ssnFile=simulation_ssn_results.csv"
-
-				out, err := exec.Command("python", "./Scripts/plotgraphs.py", pathOfData, pathOfFolder, plotSSN).Output()
-
-				if err != nil {
-					log.Println(string(out))
-					log.Panicln("ERROR ON EXECUTING PYTHON SCRIPT", err)
-				}
-
-				log.Println("Output:\n---\n\n", string(out), "\n----")
-			}
-
-				log.Println("Calling Python script...")
-
-				out, err := exec.Command("python", "./Scripts/plotgraphs.py").Output()
-
-				if err != nil {
-					log.Panicln("ERROR ON EXECUTING PYTHON SCRIPT", err)
-				}
-
-				log.Println("Output:\n---\n\n", string(out), "\n----")
-		*/
 	} else {
 		log.Println("<Skip calling python script>")
 	}
