@@ -25,7 +25,7 @@ We also provided a customizable python script that plots, running the tool with 
 <img widht="200" height="200" src="Results/spanish_flu_no_measures/results_.png">
 </div>
 
-### Musk policy
+### Mask policy
 
 <div align="center">
 <img widht="200" height="200" src="Results/spanish_flu_only_musk_efficient_50/results_epidemic.png">
