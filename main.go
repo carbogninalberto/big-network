@@ -27,17 +27,17 @@ type bigNet []person
 // Hyperparameters configuration of Simulation
 const (
 	ISDEBUG             = false
-	nNodes              = 490585 //4 // 4905854 number of people in Veneto
-	nEdges              = 150    //Dunbar number 150
-	bedIntensiveCare    = 45     //0    //https://www.aulss2.veneto.it/amministrazione-trasparente/disposizioni-generali/atti-generali/regolamenti?p_p_id=101&p_p_lifecycle=0&p_p_state=maximized&p_p_col_id=column-1&p_p_col_pos=22&p_p_col_count=24&_101_struts_action=%2Fasset_publisher%2Fview_content&_101_assetEntryId=10434368&_101_type=document
-	bedSubIntensiveCare = 1620   //1  //number of beds
-	pIntensiveCare      = 0.02   //probability of requiring intensive Care
-	pSubIntensiveCare   = 0.15   //probability of requiring sub intensive care
-	hospitalDays        = 7      //the number of day to add to the duration of the disease
-	medianR0            = 2.1    //2.28  //https://pubmed.ncbi.nlm.nih.gov/32097725/ 2.06-2.52 95% CI 0,22/1.96 = 0.112
-	stdR0               = 0.7    //0.112
+	nNodes              = 4905854 // 4905854 number of people in Veneto
+	nEdges              = 150     //Dunbar number 150
+	bedIntensiveCare    = 45      //0    //https://www.aulss2.veneto.it/amministrazione-trasparente/disposizioni-generali/atti-generali/regolamenti?p_p_id=101&p_p_lifecycle=0&p_p_state=maximized&p_p_col_id=column-1&p_p_col_pos=22&p_p_col_count=24&_101_struts_action=%2Fasset_publisher%2Fview_content&_101_assetEntryId=10434368&_101_type=document
+	bedSubIntensiveCare = 16201   //number of beds
+	pIntensiveCare      = 0.02    //probability of requiring intensive Care
+	pSubIntensiveCare   = 0.15    //probability of requiring sub intensive care
+	hospitalDays        = 7       //the number of day to add to the duration of the disease
+	medianR0            = 2.1     //2.28  //https://pubmed.ncbi.nlm.nih.gov/32097725/ 2.06-2.52 95% CI 0,22/1.96 = 0.112
+	stdR0               = 0.7     //0.112
 	infectiveEpochs     = 3
-	simulationEpochs    = 200 //DURATION OF SIMULATION
+	simulationEpochs    = 180 //DURATION OF SIMULATION
 	deadRate            = 0.025
 	//muskEpoch           = 30   //30   //starting epoch of musk set -1 to disable
 	//muskProb            = 0.05 //95 //prevention probability
