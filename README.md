@@ -14,22 +14,40 @@
 
 # Introduction
 With this project we built a tool that is able to simulate the spreading of a certain virus over a big network, analyze the impact on healthcare system and observe the effects of containment policies like wearing musks and social distacing.
+
 We also provided a customizable python script that plots, running the tool with montecarlo simulation flag, some metrics with Confidence Intervals.
-For example, simulating a spanish flu like spreading, we observe:
-<div align="left">
-  <div align="center">
-    <img widht="256" height="256" src="Results/spanish_flu_no_measures/results_epidemic.png.png">
-    <p>No measures</p>
-  <div>
-  <div align="center">
-    <img widht="256" height="256" src="Results/spanish_flu_only_musk_efficient_50/results_epidemic.png.png">
-    <p>Musk policy</p>
-  <div>
-  <div align="center">
-    <img widht="256" height="256" src="Results/spanish_flu_only_social_distance_relatives_friends/results_epidemic.png.png">
-    <p>Social Distacing policy</p>
-  <div>
-</div>  
+
+### No measures
+
+<div align="center">
+<img widht="200" height="200" src="Results/spanish_flu_no_measures/results_epidemic.png">
+<img widht="200" height="200" src="Results/spanish_flu_no_measures/results_ssn_epidemic.png">
+<img widht="200" height="200" src="Results/spanish_flu_no_measures/results_.png">
+</div>
+
+### Musk policy
+
+<div align="center">
+<img widht="200" height="200" src="Results/spanish_flu_only_musk_efficient_50/results_epidemic.png">
+<img widht="200" height="200" src="Results/spanish_flu_only_musk_efficient_50/results_ssn_epidemic.png">
+<img widht="200" height="200" src="Results/spanish_flu_only_musk_efficient_50/results_.png">
+</div>
+
+### Social Distacing policy
+
+<div align="center">
+<img widht="200" height="200" src="Results/spanish_flu_only_social_distance_relatives_friends/results_epidemic.png">
+<img widht="200" height="200" src="Results/spanish_flu_only_social_distance_relatives_friends/results_ssn_epidemic.png">
+<img widht="200" height="200" src="Results/spanish_flu_only_social_distance_relatives_friends/results_.png">
+</div>
+
+And we also calculated the confidence intervals of **Total Infected**, **Total Recovered** and **Total Deaths** with Asymptotic Formulas and Bootstrap Algorithm; for example for no containment measures:
+
+<div align="center">
+<img widht="220" height="220" src="Results/spanish_flu_no_measures/results_total_infected.png">
+<img widht="220" height="220" src="Results/spanish_flu_no_measures/results_total_recovered.png">
+<img widht="220" height="220" src="Results/spanish_flu_no_measures/results_total_deaths.png">
+</div>
 
 # Installation
 Assuming that you have golang installed on your machine [here instructions](#https://golang.org/doc/install).
@@ -39,6 +57,7 @@ If you don't have already generated a Network.json file in your project folder r
 go run . -savenet=true
 ```
 Now you will find the file in timestamp/Network.json, now you should move this file in the main project folder, or use the flag **-filenet=timestamp/Network.json**.
+
 Assuming that you choose the first option, in order to run the simulation over the generated Network:
 
 ```
@@ -116,6 +135,6 @@ The exported .csv files header is the following:
 - [X] Create a Big Network Graph of the Population
 - [X] Gather Information about Italian Hospitals
 - [X] Gather Information about different viruses
-- [X] Coding the core-project  (**work in progress**)
+- [X] Coding the core-project 
 - [X] Montecarlo Simulation and CI
-- [ ] Final Report (**work in progress**)
+- [X] Final Report 
