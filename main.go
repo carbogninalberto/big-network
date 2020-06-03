@@ -67,9 +67,9 @@ func main() {
 	computeSSN := flag.Bool("computeSSN", false, "default value is false, set to true to get information about national healthcare system")
 	runPyScript := flag.Bool("runpyscript", false, "default valuse is false, set to true if you want to print graphs of simulation with matplotlib")
 	folderFlag := flag.String("folder", "", "default value is '', set the name of the folder to generate")
-	muskEpoch := flag.Int("muskEpoch", 1, "default value is -1, number of epochs before applying measure")
+	muskEpoch := flag.Int("muskEpoch", -1, "default value is -1, number of epochs before applying measure")
 	muskProb := flag.Float64("muskProb", 0.2, "default value is 0.2, musk policy efficency")
-	socDisEpoch := flag.Int("socDisEpoch", 1, "default value is -1, number of epochs before applying measure")
+	socDisEpoch := flag.Int("socDisEpoch", -1, "default value is -1, number of epochs before applying measure")
 	flag.Parse()
 
 	// random seed
@@ -89,6 +89,7 @@ func main() {
 	}
 
 	os.MkdirAll(folderName, os.ModePerm)
+	os.MkdirAll(folderName+"/trials", os.ModePerm)
 
 	if !*loadNetwork {
 		log.Println("Creating network...")
@@ -239,6 +240,37 @@ func main() {
 			intensiveCare:    bedIntensiveCare,
 			subIntensiveCare: bedSubIntensiveCare,
 		}
+
+		if *computeCI {
+			log.Println("Save for compute CI on csv...")
+
+			csvFile, err := os.Create(folderName + "/trials/" + strconv.Itoa(i) + "_trial_results.csv")
+
+			if err != nil {
+				log.Fatalf("failed creating file: %s", err)
+			}
+
+			csvwriter := csv.NewWriter(csvFile)
+
+			for _, epoch := range epochsResults {
+				// convert row of []int into []string
+				var row [len(epoch)]string
+				for i := 0; i < len(epoch); i++ {
+					row[i] = strconv.Itoa(epoch[i])
+				}
+				err = csvwriter.Write(row[:])
+
+				if err != nil {
+					log.Println("ERROR ON CREATING CSV:", err)
+				}
+			}
+
+			csvwriter.Flush()
+			csvFile.Close()
+
+			log.Println("Saved for compute CI and closed csv.")
+		}
+
 	}
 
 	if *computeCI {
@@ -337,8 +369,11 @@ func main() {
 			pathOfData := "--trialsFile=simulation_trials_results.csv"
 			pathOfFolder := "--folder=" + folderName + "/"
 			plotSSN := "--ssnFile=simulation_ssn_results.csv"
+			nTrials := "--trials=" + strconv.Itoa(*mctrials)
 
-			out, err := exec.Command("python", "./Scripts/plotgraphs.py", pathOfData, pathOfFolder, plotSSN).Output()
+			log.Println("python3 ./Scripts/plotgraphs.py", pathOfData, pathOfFolder, plotSSN, nTrials)
+
+			out, err := exec.Command("python", "./Scripts/plotgraphs.py", pathOfData, pathOfFolder, plotSSN, nTrials).Output()
 
 			if err != nil {
 				log.Println(string(out))

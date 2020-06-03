@@ -98,7 +98,7 @@ def bootstrapAlgorithm(dataset, accuracy=25, ci_level=0.95, metric='mean'):
 if __name__ == "__main__":
     # Define the parser
     parser = argparse.ArgumentParser(description="Analyze the result data of the spreading disease")
-    # Define the flag --trials with default value file.csv
+    # Define the flag --trialsFile with default value file.csv
     parser.add_argument('--trialsFile', action='store', dest='trialsFile', default='file.csv')
      # Define the flag --ssn with default value empty
     parser.add_argument('--ssnFile', action='store', dest='ssnFile', default='')
@@ -106,6 +106,8 @@ if __name__ == "__main__":
     parser.add_argument('--simulationFile', action='store', dest='simulationFile', default='simulation.csv')
     # Define the flag --folder with default value of graphs
     parser.add_argument('--folder', action='store', dest='folder', default='graphs/')
+    # Define the flag --trials with default number 1
+    parser.add_argument('--trials', action='store', dest='trials', default=1)
     # parse values
     args = parser.parse_args()
 
@@ -233,6 +235,29 @@ if __name__ == "__main__":
     plt.legend()
 
     fig.savefig(args.folder+"results_epidemic.png", dpi=my_dpi*3)
+    plt.clf()
+
+   
+
+    # generate x for number of epochs
+    t = np.arange(0, len(simulationData), 1)
+    fig, ax = plt.subplots()
+
+    for i in range(int(args.trials)):
+
+        dataTrial = pd.read_csv(args.folder+"trials/"+str(i)+"_trial_results.csv", header=None)
+        active_infected = dataTrial.iloc[:, 0]
+
+    
+        ax.plot(t, active_infected, label="Active Infected "+str(i))
+
+    ax.set(xlabel='epochs (day)', ylabel='number of people',
+        title='Spreading of the disease')
+    ax.grid()
+    
+    plt.legend()
+
+    fig.savefig(args.folder+"results_epidemic_all.png", dpi=my_dpi*3)
     plt.clf()
 
     if args.ssnFile != '':
