@@ -382,6 +382,10 @@ func main() {
 
 			log.Println("Output:\n---\n\n", string(out), "\n----")
 
+			errOutputFile := ioutil.WriteFile(folderName+"/output.txt", out, 0644)
+			if errOutputFile != nil {
+				log.Panicln("ERROR ON WRITING OUTPUT OF PYTHON SCRIPT", err)
+			}
 		}
 
 	} else {
